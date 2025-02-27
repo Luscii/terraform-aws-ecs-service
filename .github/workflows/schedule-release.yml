@@ -1,0 +1,41 @@
+name: Acceptance Release (scheduled)
+on:
+  schedule:
+    - cron: '0 6 * * 2'
+  workflow_dispatch:
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get Draft Release
+        id: get-release
+        uses: boite-nl/query-release-action@v1.0.2
+        with:
+          draft: true
+      - name: Echo outputs
+        run: |
+          echo "FOUND: ${{ steps.get-release.outputs.found }}"
+          echo "Name: ${{ steps.get-release.outputs.name }}"
+          echo "TagName: ${{ steps.get-release.outputs.tag_name }}"
+      - name: "Create Pre-release"
+        uses: actions/github-script@v7
+        if: steps.get-release.outputs.found == 'true'
+        with:
+          github-token: ${{ secrets.CI_GITHUB_TOKEN }}
+          script: |
+            const { data: release } = await github.rest.repos.updateRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: ${{ steps.get-release.outputs.id }},
+              prerelease: true,
+              draft: false,
+              make_latest: false
+            })
+
+            return release
+  create_tag:
+    uses: ./.github/workflows/create-tag.yml
+    with:
+      tag: next
