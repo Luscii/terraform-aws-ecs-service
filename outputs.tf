@@ -62,3 +62,13 @@ output "service_discovery_internal_url" {
   value       = "http://${aws_ecs_service.this.service_connect_configuration[0].service[0].client_alias[0].dns_name}:${aws_ecs_service.this.service_connect_configuration[0].service[0].client_alias[0].port}"
   description = "Base URL for the service internally"
 }
+
+output "security_group_id" {
+  value       = aws_security_group.this.id
+  description = "The ID of the security group"
+}
+
+output "security_group_arn" {
+  value       = aws_security_group.this.arn
+  description = "The ARN of the security group"
+}
