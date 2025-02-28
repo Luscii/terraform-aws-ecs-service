@@ -97,6 +97,8 @@ module "sc_service" {
 | <a name="output_cluster_name"></a> [cluster\_name](#output\_cluster\_name) | The name of the ECS cluster |
 | <a name="output_label_context"></a> [label\_context](#output\_label\_context) | Context of the label for subsequent use |
 | <a name="output_scaling_target"></a> [scaling\_target](#output\_scaling\_target) | The autoscaling target resource - https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/appautoscaling_target |
+| <a name="output_security_group_arn"></a> [security\_group\_arn](#output\_security\_group\_arn) | The ARN of the security group |
+| <a name="output_security_group_id"></a> [security\_group\_id](#output\_security\_group\_id) | The ID of the security group |
 | <a name="output_service_arn"></a> [service\_arn](#output\_service\_arn) | The ARN of the service |
 | <a name="output_service_discovery_client_aliases"></a> [service\_discovery\_client\_aliases](#output\_service\_discovery\_client\_aliases) | The service discovery client aliases for the service |
 | <a name="output_service_discovery_internal_url"></a> [service\_discovery\_internal\_url](#output\_service\_discovery\_internal\_url) | Base URL for the service internally |
