@@ -5,7 +5,7 @@ locals {
   container_definitions_list    = "[${join(",", local.container_definitions_encoded)}]"
 
   required_cpu    = sum([for definition in local.container_definitions : definition.sensitive_json_map_object.cpu]) + (var.high_traffic_service ? 512 : 256)
-  required_memory = sum([for definition in local.container_definitions : definition.sensitive_json_map_object.memory])
+  required_memory = sum([for definition in local.container_definitions : definition.sensitive_json_map_object.memory]) + (var.high_traffic_service ? 128 : 64)
 }
 
 resource "aws_ecs_task_definition" "this" {
@@ -26,12 +26,12 @@ resource "aws_ecs_task_definition" "this" {
   lifecycle {
     precondition {
       condition     = var.task_cpu > local.required_cpu
-      error_message = "task_cpu must be greater than or equal to the sum of CPU for all containers in the task definition, including envoy (256 or 512)"
+      error_message = "task_cpu must be greater than the sum of CPU (${local.required_cpu}) for all containers in the task definition, including envoy (256 or 512)"
     }
 
     precondition {
-      condition     = var.task_memory >= local.required_memory
-      error_message = "value must be greater than or equal to the sum of Memory for all containers in the task definition"
+      condition     = var.task_memory > local.required_memory
+      error_message = "value must be greater than the sum of Memory (${local.required_memory} Mb) for all containers in the task definition"
     }
     precondition {
       condition     = contains([256, 512, 1024, 2048, 4096, 8192, 16384], var.task_cpu)
