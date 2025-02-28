@@ -249,12 +249,12 @@ variable "scaling_target" {
   default     = null
 
   validation {
-    condition     = var.scaling_target != null && alltrue([for policy in var.scaling_target : contains(["ECSServiceAverageCPUUtilization", "ALBRequestCountPerTarget", "ECSServiceAverageMemoryUtilization"], policy.predefined_metric_specification)])
+    condition     = var.scaling_target == null || alltrue([for policy in var.scaling_target : contains(["ECSServiceAverageCPUUtilization", "ALBRequestCountPerTarget", "ECSServiceAverageMemoryUtilization"], policy.predefined_metric_specification)])
     error_message = "Predefined metric type should be one of ECSServiceAverageCPUUtilization or ECSServiceAverageMemoryUtilization"
   }
 
   validation {
-    condition     = var.scaling_target != null && alltrue([for policy in var.scaling_target : (policy.predefined_metric_type == "ALBRequestCountPerTarget" && regex("^app/.+/[[:alnum:]]+/targetgroup/.+/[[:alnum:]]+", policy.resource_label)) || true])
+    condition     = var.scaling_target == null || alltrue([for policy in var.scaling_target : (policy.predefined_metric_type == "ALBRequestCountPerTarget" && regex("^app/.+/[[:alnum:]]+/targetgroup/.+/[[:alnum:]]+", policy.resource_label)) || true])
     error_message = "When predefined metric type is ALBRequestCountPerTarget, resource_label must be set and following the format defined on https://docs.aws.amazon.com/autoscaling/ec2/APIReference/API_PredefinedMetricSpecification.html"
   }
 }
