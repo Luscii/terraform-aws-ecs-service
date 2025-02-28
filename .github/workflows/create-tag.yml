@@ -1,0 +1,29 @@
+name: Create tag
+on:
+  workflow_call:
+    inputs:
+      tag:
+        type: string
+        description: Tag name to create
+        required: true
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: get SHA and retrieve all tags
+        id: sha
+        run: |
+          echo "commit=$(git log -1 --format='%H')" >> $GITHUB_OUTPUT
+          git fetch --prune --unshallow --tags
+      - name: Set tag - ${{ inputs.tag }}
+        uses: rickstaa/action-create-tag@v1.7.2
+        id: tag
+        with:
+          tag: ${{ inputs.tag }}
+          force_push_tag: true
+          commit_sha: ${{ steps.sha.outputs.commit }}

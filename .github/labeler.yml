@@ -1,0 +1,48 @@
+version: 1
+labels:
+  # VERSION LABELS
+  - label: major
+    branch: "^major/.+"
+  - label: minor
+    branch: "^feature/.+"
+  - label: patch
+    branch: "^chore/.+"
+  - label: patch
+    branch: "^bug/.+"
+  - label: patch
+    branch: "^hotfix/.+"
+  - label: patch
+    branch: "^cleanup/.+"
+  - label: patch
+    branch: "^enhancement/.+"
+
+  # Type Labels
+  - label: feature
+    branch: "^feature/.+"
+  - label: bug
+    branch: "^hotfix/.+"
+  - label: bug
+    branch: "^fix/.+"
+  - label: bug
+    branch: "^bug/.+"
+  - label: documentation
+    files:
+      - "*.md"
+      - "docs/*"
+  - label: "infrastructure"
+    files:
+      - "*.tf"
+      - "*.tfvars"
+  - label: "build definition"
+    files:
+      - ".github/*"
+      - ".pre-commit-config.yaml"
+
+  # PR Size Labels
+  - label: "PR-Size: S"
+    size-below: 50
+  - label: "PR-Size: M"
+    size-above: 49
+    size-below: 333
+  - label: "PR-Size: L"
+    size-above: 332

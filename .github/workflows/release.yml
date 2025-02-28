@@ -1,0 +1,39 @@
+name: Release
+on:
+  release:
+    types:
+      - published
+
+concurrency:
+  group: ci-release
+  cancel-in-progress: true
+
+jobs:
+  promote_release:
+    steps:
+      - name: Get Release
+        id: get-release
+        uses: boite-nl/query-release-action@v1.0.2
+        with:
+          select: ${{ inputs.ref }}
+      - name: "Promote Release"
+        uses: actions/github-script@v7
+        if: steps.get-release.outputs.found == 'true'
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { data: release } = await github.rest.repos.updateRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: ${{ steps.get-release.outputs.id }},
+              prerelease: false,
+              draft: false,
+              make_latest: true
+            })
+
+            return release
+  create_tag:
+    uses: ./.github/workflows/create-tag.yml
+    with:
+      tag: latest
+    
