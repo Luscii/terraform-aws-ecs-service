@@ -242,8 +242,8 @@ variable "scaling_target" {
     predefined_metric_specification = string
     resource_label                  = optional(string)
     target_value                    = number
-    scale_in_cooldown               = number
-    scale_out_cooldown              = number
+    scale_in_cooldown               = optional(number, 300)
+    scale_out_cooldown              = optional(number, 300)
   }))
   description = "Target tracking scaling policies for the service. Enables Target tracking scaling. Predefined metric type must be one of ECSServiceAverageCPUUtilization, ALBRequestCountPerTarget or ECSServiceAverageMemoryUtilization - https://docs.aws.amazon.com/autoscaling/application/APIReference/API_PredefinedMetricSpecification.html"
   default     = null
