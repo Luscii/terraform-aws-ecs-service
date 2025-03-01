@@ -1,5 +1,5 @@
 locals {
-  container_definitions = concat(var.container_definitions, [module.xray_container_definition])
+  container_definitions = concat(module.container_definitions, [module.xray_container_definition])
 
   container_definitions_encoded = [for definition in local.container_definitions : definition.sensitive_json_map_encoded]
   container_definitions_list    = "[${join(",", local.container_definitions_encoded)}]"
