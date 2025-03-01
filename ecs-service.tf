@@ -2,7 +2,7 @@ locals {
   container_names = [for definition in local.container_definitions : definition.sensitive_json_map_object.name]
 
   container_port_names          = { for definition in local.container_definitions : definition.sensitive_json_map_object.name => definition.sensitive_json_map_object.portMappings[*].containerPort }
-  load_balancer_container_names = length(var.load_balancers) ? [for lb in var.load_balancers : lb.container_name] : []
+  load_balancer_container_names = length(var.load_balancers) > 0 ? [for lb in var.load_balancers : lb.container_name] : []
 }
 
 resource "aws_ecs_service" "this" {

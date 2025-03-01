@@ -68,12 +68,60 @@ variable "task_memory" {
 
 variable "container_definitions" {
   type = list(object({
-    json_map_encoded                = string
-    json_map_encoded_list           = string
-    json_map_object                 = any
-    sensitive_json_map_encoded      = string
-    sensitive_json_map_encoded_list = string
-    sensitive_json_map_object       = any
+    name  = string
+    image = string
+
+    cpu                = optional(number)
+    memory             = optional(number)
+    memory_reservation = optional(number)
+
+    depends_on = optional(list(object({
+      condition     = string
+      containerName = string
+      }))
+    )
+    essential = optional(bool, true)
+
+    port_mappings = optional(list(object({
+      containerPort = number
+      protocol      = optional(string, "tcp")
+      name          = optional(string)
+    })))
+
+    healthcheck = optional(object({
+      command     = list(string)
+      interval    = optional(number)
+      retries     = optional(number)
+      startPeriod = optional(number)
+      timeout     = optional(number)
+    }))
+    entrypoint        = optional(list(string))
+    command           = optional(list(string))
+    working_directory = optional(string)
+    environment = optional(list(object({
+      name  = string
+      value = string
+    })))
+    secrets = optional(list(object({
+      name      = string
+      valueFrom = string
+    })))
+    log_configuration = optional(object({
+      logDriver = string
+      options   = optional(map(string))
+      secretOptions = optional(list(object({
+        name      = string
+        valueFrom = string
+      })))
+    }))
+    ulimits = optional(list(object({
+      hardLimit = number
+      name      = string
+      softLimit = number
+    })))
+    user          = optional(string)
+    start_timeout = optional(number)
+    stop_timeout  = optional(number)
   }))
   description = "List of container definitions, accepts the output of the module https://github.com/cloudposse/terraform-aws-ecs-container-definition"
 }
@@ -254,7 +302,14 @@ variable "scaling_target" {
   }
 
   validation {
-    condition     = var.scaling_target == null ? true : alltrue([for policy in var.scaling_target : (policy.predefined_metric_type == "ALBRequestCountPerTarget" && regex("^app/.+/[[:alnum:]]+/targetgroup/.+/[[:alnum:]]+", policy.resource_label)) || true])
+    condition = var.scaling_target == null ? true : alltrue([
+      for policy in var.scaling_target :
+      (
+        policy.predefined_metric_specification == "ALBRequestCountPerTarget" && policy.resource_label == null ? false : (
+          (policy.predefined_metric_specification == "ALBRequestCountPerTarget" && can(regex("^app/.+/[[:alnum:]]+/targetgroup/.+/[[:alnum:]]+", policy.resource_label)) || true)
+        )
+      )
+    ])
     error_message = "When predefined metric type is ALBRequestCountPerTarget, resource_label must be set and following the format defined on https://docs.aws.amazon.com/autoscaling/ec2/APIReference/API_PredefinedMetricSpecification.html"
   }
 }
