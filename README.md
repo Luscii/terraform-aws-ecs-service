@@ -42,7 +42,6 @@ module "sc_service" {
 | <a name="module_autoscaling_target_tracking_label"></a> [autoscaling\_target\_tracking\_label](#module\_autoscaling\_target\_tracking\_label) | cloudposse/label/null | 0.25.0 |
 | <a name="module_container_definitions"></a> [container\_definitions](#module\_container\_definitions) | cloudposse/ecs-container-definition/aws | 0.61.1 |
 | <a name="module_label"></a> [label](#module\_label) | cloudposse/label/null | 0.25.0 |
-| <a name="module_xray_container_definition"></a> [xray\_container\_definition](#module\_xray\_container\_definition) | cloudposse/ecs-container-definition/aws | 0.61.1 |
 
 ### Resources
 
@@ -60,6 +59,8 @@ module "sc_service" {
 | [aws_security_group.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group) | resource |
 | [aws_ecs_cluster.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/ecs_cluster) | data source |
 | [aws_iam_policy_document.task_ecs_exec](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
+| [aws_iam_role.execution](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_role) | data source |
+| [aws_iam_role.task](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_role) | data source |
 
 ### Inputs
 
@@ -72,7 +73,7 @@ module "sc_service" {
 | <a name="input_ecs_cluster_name"></a> [ecs\_cluster\_name](#input\_ecs\_cluster\_name) | Name of the ECS cluster in which the service is deployed | `string` | n/a | yes |
 | <a name="input_egress_rules"></a> [egress\_rules](#input\_egress\_rules) | Egress rules for the default security group for the service | <pre>list(object({<br/>    description = string<br/>    from_port   = number<br/>    to_port     = number<br/>    protocol    = optional(string, "-1")<br/><br/>    cidr_blocks      = optional(list(string))<br/>    ipv6_cidr_blocks = optional(list(string))<br/>    prefix_list_ids  = optional(list(string))<br/>    security_groups  = optional(list(string))<br/>    self             = optional(bool)<br/>  }))</pre> | `[]` | no |
 | <a name="input_enable_ecs_execute_command"></a> [enable\_ecs\_execute\_command](#input\_enable\_ecs\_execute\_command) | Enables ECS exec to the service and attaches required IAM policy to task role | `bool` | `false` | no |
-| <a name="input_execution_role_arn"></a> [execution\_role\_arn](#input\_execution\_role\_arn) | Arn for the IAM Role used as the execution role | `string` | n/a | yes |
+| <a name="input_execution_role_name"></a> [execution\_role\_name](#input\_execution\_role\_name) | Name for the IAM Role used as the execution role | `string` | n/a | yes |
 | <a name="input_force_new_deployment"></a> [force\_new\_deployment](#input\_force\_new\_deployment) | Whether to force a new deployment of the service. This can be used to update the service with a new task definition | `bool` | `false` | no |
 | <a name="input_high_traffic_service"></a> [high\_traffic\_service](#input\_high\_traffic\_service) | Whether the service is a high traffic service: >500 requests/second | `bool` | `false` | no |
 | <a name="input_ingress_rules"></a> [ingress\_rules](#input\_ingress\_rules) | Ingress rules for the default security group for the service | <pre>list(object({<br/>    description = string<br/>    from_port   = number<br/>    to_port     = number<br/>    protocol    = optional(string, "-1")<br/><br/>    cidr_blocks      = optional(list(string))<br/>    ipv6_cidr_blocks = optional(list(string))<br/>    prefix_list_ids  = optional(list(string))<br/>    security_groups  = optional(list(string))<br/>    self             = optional(bool)<br/>  }))</pre> | `[]` | no |
@@ -81,13 +82,13 @@ module "sc_service" {
 | <a name="input_platform_version"></a> [platform\_version](#input\_platform\_version) | Platform version for the ECS service | `string` | `"LATEST"` | no |
 | <a name="input_scaling"></a> [scaling](#input\_scaling) | Scaling configuration for the service. Enables scaling | <pre>object({<br/>    min_capacity = number<br/>    max_capacity = number<br/>  })</pre> | `null` | no |
 | <a name="input_scaling_scheduled"></a> [scaling\_scheduled](#input\_scaling\_scheduled) | Scheduled scaling policies for the service. Enables Scheduled scaling | <pre>map(object({<br/>    schedule     = string<br/>    timezone     = string<br/>    min_capacity = number<br/>    max_capacity = number<br/>  }))</pre> | `null` | no |
-| <a name="input_scaling_target"></a> [scaling\_target](#input\_scaling\_target) | Target tracking scaling policies for the service. Enables Target tracking scaling. Predefined metric type must be one of ECSServiceAverageCPUUtilization, ALBRequestCountPerTarget or ECSServiceAverageMemoryUtilization - https://docs.aws.amazon.com/autoscaling/application/APIReference/API_PredefinedMetricSpecification.html | <pre>map(object({<br/>    predefined_metric_specification = string<br/>    resource_label                  = optional(string)<br/>    target_value                    = number<br/>    scale_in_cooldown               = optional(number, 300)<br/>    scale_out_cooldown              = optional(number, 300)<br/>  }))</pre> | `null` | no |
+| <a name="input_scaling_target"></a> [scaling\_target](#input\_scaling\_target) | Target tracking scaling policies for the service. Enables Target tracking scaling. Predefined metric type must be one of ECSServiceAverageCPUUtilization, ALBRequestCountPerTarget or ECSServiceAverageMemoryUtilization - https://docs.aws.amazon.com/autoscaling/application/APIReference/API_PredefinedMetricSpecification.html | <pre>map(object({<br/>    predefined_metric_type = string<br/>    resource_label         = optional(string)<br/>    target_value           = number<br/>    scale_in_cooldown      = optional(number, 300)<br/>    scale_out_cooldown     = optional(number, 300)<br/>  }))</pre> | `null` | no |
 | <a name="input_security_group_ids"></a> [security\_group\_ids](#input\_security\_group\_ids) | List of additional security groups to attach to the service | `list(string)` | `[]` | no |
 | <a name="input_service_connect_configuration"></a> [service\_connect\_configuration](#input\_service\_connect\_configuration) | Service discovery configuration for the service | <pre>object({<br/>    namespace      = string<br/>    discovery_name = string<br/>    port_name      = string<br/>    client_alias = object({<br/>      dns_name = string<br/>      port     = number<br/>    })<br/>    cloudwatch = optional(object({<br/>      log_group = string<br/>      region    = string<br/>    }))<br/>  })</pre> | n/a | yes |
 | <a name="input_subnets"></a> [subnets](#input\_subnets) | List of Subnet ids in which the Service runs | `list(string)` | n/a | yes |
 | <a name="input_task_cpu"></a> [task\_cpu](#input\_task\_cpu) | value in cpu units for the task | `number` | n/a | yes |
 | <a name="input_task_memory"></a> [task\_memory](#input\_task\_memory) | value in MiB for the task | `number` | n/a | yes |
-| <a name="input_task_role_arn"></a> [task\_role\_arn](#input\_task\_role\_arn) | Arn for the IAM Role used as the task role | `string` | n/a | yes |
+| <a name="input_task_role_name"></a> [task\_role\_name](#input\_task\_role\_name) | Name for the IAM Role used as the task role | `string` | n/a | yes |
 | <a name="input_vpc_id"></a> [vpc\_id](#input\_vpc\_id) | ID of the VPC in which the service is deployed | `string` | n/a | yes |
 
 ### Outputs

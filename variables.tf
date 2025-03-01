@@ -126,24 +126,14 @@ variable "container_definitions" {
   description = "List of container definitions, accepts the output of the module https://github.com/cloudposse/terraform-aws-ecs-container-definition"
 }
 
-variable "task_role_arn" {
+variable "task_role_name" {
   type        = string
-  description = "Arn for the IAM Role used as the task role"
-
-  validation {
-    condition     = can(regex("^arn:aws:iam::[[:digit:]]{12}:role/.+", var.task_role_arn))
-    error_message = "Must be a valid AWS IAM role ARN."
-  }
+  description = "Name for the IAM Role used as the task role"
 }
 
-variable "execution_role_arn" {
+variable "execution_role_name" {
   type        = string
-  description = "Arn for the IAM Role used as the execution role"
-
-  validation {
-    condition     = can(regex("^arn:aws:iam::[[:digit:]]{12}:role/.+", var.execution_role_arn))
-    error_message = "Must be a valid AWS IAM role ARN."
-  }
+  description = "Name for the IAM Role used as the execution role"
 }
 
 variable "enable_ecs_execute_command" {
@@ -287,17 +277,17 @@ variable "scaling_scheduled" {
 
 variable "scaling_target" {
   type = map(object({
-    predefined_metric_specification = string
-    resource_label                  = optional(string)
-    target_value                    = number
-    scale_in_cooldown               = optional(number, 300)
-    scale_out_cooldown              = optional(number, 300)
+    predefined_metric_type = string
+    resource_label         = optional(string)
+    target_value           = number
+    scale_in_cooldown      = optional(number, 300)
+    scale_out_cooldown     = optional(number, 300)
   }))
   description = "Target tracking scaling policies for the service. Enables Target tracking scaling. Predefined metric type must be one of ECSServiceAverageCPUUtilization, ALBRequestCountPerTarget or ECSServiceAverageMemoryUtilization - https://docs.aws.amazon.com/autoscaling/application/APIReference/API_PredefinedMetricSpecification.html"
   default     = null
 
   validation {
-    condition     = var.scaling_target == null ? true : alltrue([for policy in var.scaling_target : contains(["ECSServiceAverageCPUUtilization", "ALBRequestCountPerTarget", "ECSServiceAverageMemoryUtilization"], policy.predefined_metric_specification)])
+    condition     = var.scaling_target == null ? true : alltrue([for policy in var.scaling_target : contains(["ECSServiceAverageCPUUtilization", "ALBRequestCountPerTarget", "ECSServiceAverageMemoryUtilization"], policy.predefined_metric_type)])
     error_message = "Predefined metric type should be one of ECSServiceAverageCPUUtilization or ECSServiceAverageMemoryUtilization"
   }
 
@@ -305,8 +295,8 @@ variable "scaling_target" {
     condition = var.scaling_target == null ? true : alltrue([
       for policy in var.scaling_target :
       (
-        policy.predefined_metric_specification == "ALBRequestCountPerTarget" && policy.resource_label == null ? false : (
-          (policy.predefined_metric_specification == "ALBRequestCountPerTarget" && can(regex("^app/.+/[[:alnum:]]+/targetgroup/.+/[[:alnum:]]+", policy.resource_label)) || true)
+        policy.predefined_metric_type == "ALBRequestCountPerTarget" && policy.resource_label == null ? false : (
+          (policy.predefined_metric_type == "ALBRequestCountPerTarget" && can(regex("^app/.+/[[:alnum:]]+/targetgroup/.+/[[:alnum:]]+", policy.resource_label)) || true)
         )
       )
     ])

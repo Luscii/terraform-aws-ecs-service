@@ -1,31 +1,35 @@
+locals {
+  container_definitions = concat(var.container_definitions, [local.xray_container_definition])
+}
+
 module "container_definitions" {
   source  = "cloudposse/ecs-container-definition/aws"
   version = "0.61.1"
 
-  count = length(var.container_definitions)
+  count = length(local.container_definitions)
 
-  container_name  = var.container_definitions[count.index].name
-  container_image = var.container_definitions[count.index].image
-  essential       = var.container_definitions[count.index].essential
+  container_name  = local.container_definitions[count.index].name
+  container_image = local.container_definitions[count.index].image
+  essential       = local.container_definitions[count.index].essential
 
-  container_cpu                = var.container_definitions[count.index].cpu
-  container_memory             = var.container_definitions[count.index].memory
-  container_memory_reservation = var.container_definitions[count.index].memory_reservation
+  container_cpu                = local.container_definitions[count.index].cpu
+  container_memory             = contains(keys(local.container_definitions[count.index]), "memory") ? local.container_definitions[count.index].memory : null
+  container_memory_reservation = contains(keys(local.container_definitions[count.index]), "memory_reservation") ? local.container_definitions[count.index].memory_reservation : null
 
-  port_mappings     = var.container_definitions[count.index].port_mappings
-  healthcheck       = var.container_definitions[count.index].healthcheck
-  log_configuration = var.container_definitions[count.index].log_configuration
+  port_mappings     = contains(keys(local.container_definitions[count.index]), "port_mappings") ? local.container_definitions[count.index].port_mappings : null
+  healthcheck       = contains(keys(local.container_definitions[count.index]), "healthcheck") ? local.container_definitions[count.index].healthcheck : null
+  log_configuration = contains(keys(local.container_definitions[count.index]), "log_configuration") ? local.container_definitions[count.index].log_configuration : null
 
-  entrypoint        = var.container_definitions[count.index].entrypoint
-  command           = var.container_definitions[count.index].command
-  working_directory = var.container_definitions[count.index].working_directory
-  ulimits           = var.container_definitions[count.index].ulimits
-  user              = var.container_definitions[count.index].user
-  start_timeout     = var.container_definitions[count.index].start_timeout
-  stop_timeout      = var.container_definitions[count.index].stop_timeout
+  entrypoint        = contains(keys(local.container_definitions[count.index]), "entrypoint") ? local.container_definitions[count.index].entrypoint : null
+  command           = contains(keys(local.container_definitions[count.index]), "command") ? local.container_definitions[count.index].command : null
+  working_directory = contains(keys(local.container_definitions[count.index]), "working_directory") ? local.container_definitions[count.index].working_directory : null
+  ulimits           = contains(keys(local.container_definitions[count.index]), "ulimits") ? local.container_definitions[count.index].ulimits : null
+  user              = contains(keys(local.container_definitions[count.index]), "user") ? local.container_definitions[count.index].user : null
+  start_timeout     = contains(keys(local.container_definitions[count.index]), "start_time") ? local.container_definitions[count.index].start_timeout : null
+  stop_timeout      = contains(keys(local.container_definitions[count.index]), "stop_time") ? local.container_definitions[count.index].stop_timeout : null
 
-  environment = var.container_definitions[count.index].environment
-  secrets     = var.container_definitions[count.index].secrets
+  environment = contains(keys(local.container_definitions[count.index]), "environment") ? local.container_definitions[count.index].environment : null
+  secrets     = contains(keys(local.container_definitions[count.index]), "secrets") ? local.container_definitions[count.index].secrets : null
 
-  container_depends_on = var.container_definitions[count.index].depends_on
+  container_depends_on = contains(keys(local.container_definitions[count.index]), "depends_on") ? local.container_definitions[count.index].depends_on : null
 }

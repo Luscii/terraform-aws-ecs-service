@@ -1,11 +1,9 @@
 locals {
-  container_definitions = concat(module.container_definitions, [module.xray_container_definition])
-
-  container_definitions_encoded = [for definition in local.container_definitions : definition.sensitive_json_map_encoded]
+  container_definitions_encoded = [for definition in module.container_definitions : definition.json_map_encoded]
   container_definitions_list    = "[${join(",", local.container_definitions_encoded)}]"
 
-  required_cpu    = sum([for definition in local.container_definitions : definition.sensitive_json_map_object.cpu]) + (var.high_traffic_service ? 512 : 256)
-  required_memory = sum([for definition in local.container_definitions : definition.sensitive_json_map_object.memory]) + (var.high_traffic_service ? 128 : 64)
+  required_cpu    = sum([for definition in module.container_definitions : contains(keys(definition.json_map_object), "cpu") ? definition.json_map_object.cpu : 0]) + (var.high_traffic_service ? 512 : 256)
+  required_memory = sum([for definition in module.container_definitions : contains(keys(definition.json_map_object), "memory") ? definition.json_map_object.memory : 0]) + (var.high_traffic_service ? 128 : 64)
 }
 
 resource "aws_ecs_task_definition" "this" {
@@ -15,8 +13,8 @@ resource "aws_ecs_task_definition" "this" {
   cpu    = var.task_cpu
   memory = var.task_memory
 
-  task_role_arn      = var.task_role_arn
-  execution_role_arn = var.execution_role_arn
+  task_role_arn      = data.aws_iam_role.task.arn
+  execution_role_arn = data.aws_iam_role.execution.arn
 
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
