@@ -1,7 +1,18 @@
 locals {
-  container_names = [for definition in local.container_definitions : definition.sensitive_json_map_object.name]
+  container_names = [for definition in module.container_definitions : definition.json_map_object.name]
 
-  container_port_names          = { for definition in local.container_definitions : definition.sensitive_json_map_object.name => definition.sensitive_json_map_object.portMappings[*].containerPort }
+  container_port_mappings = { for definition in module.container_definitions :
+    definition.json_map_object.name => contains(keys(definition.json_map_object), "portMappings") ? definition.json_map_object.portMappings : []
+  }
+  container_ports = { for name, mapping in local.container_port_mappings :
+    name => [for port in mapping : port.containerPort]
+    if(length(mapping) > 0)
+  }
+  container_port_names = { for name, mapping in local.container_port_mappings :
+    name => [for port in mapping : port.name]
+    if(length(mapping) > 0)
+  }
+  container_all_port_names      = flatten([for _name, names in local.container_port_names : names])
   load_balancer_container_names = length(var.load_balancers) > 0 ? [for lb in var.load_balancers : lb.container_name] : []
 }
 
@@ -76,7 +87,7 @@ resource "aws_ecs_service" "this" {
     ignore_changes = [desired_count]
 
     precondition {
-      condition     = contains(local.container_port_names, var.service_connect_configuration.port_name)
+      condition     = contains(local.container_all_port_names, var.service_connect_configuration.port_name)
       error_message = "Port name must be one of the container port names"
     }
     precondition {
@@ -84,7 +95,7 @@ resource "aws_ecs_service" "this" {
       error_message = "Load Balancer container name must be one of the container names"
     }
     precondition {
-      condition     = length(local.load_balancer_container_names) == 0 || alltrue([for lb in var.load_balancers : contains(local.container_port_names[lb.container_name], lb.container_port)])
+      condition     = length(local.container_ports) == 0 || alltrue([for lb in var.load_balancers : contains(local.container_ports[lb.container_name], lb.container_port)])
       error_message = "Load Balancer container port must be one of the container ports"
     }
   }
