@@ -1,6 +1,6 @@
 module "container_definitions" {
   source  = "cloudposse/ecs-container-definition/aws"
-  version = "0.61.1"
+  version = "0.61.2"
 
   count = length(var.container_definitions)
 
