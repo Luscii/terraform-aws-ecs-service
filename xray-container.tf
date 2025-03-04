@@ -1,6 +1,6 @@
 module "xray_container_definition" {
   source  = "cloudposse/ecs-container-definition/aws"
-  version = "0.61.1"
+  version = "0.61.2"
 
   container_name               = "xray-daemon"
   container_image              = "amazon/aws-xray-daemon:3.x"
