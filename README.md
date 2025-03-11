@@ -40,7 +40,7 @@ module "sc_service" {
 | <a name="module_autoscaling_label"></a> [autoscaling\_label](#module\_autoscaling\_label) | cloudposse/label/null | 0.25.0 |
 | <a name="module_autoscaling_scheduled_label"></a> [autoscaling\_scheduled\_label](#module\_autoscaling\_scheduled\_label) | cloudposse/label/null | 0.25.0 |
 | <a name="module_autoscaling_target_tracking_label"></a> [autoscaling\_target\_tracking\_label](#module\_autoscaling\_target\_tracking\_label) | cloudposse/label/null | 0.25.0 |
-| <a name="module_container_definitions"></a> [container\_definitions](#module\_container\_definitions) | cloudposse/ecs-container-definition/aws | 0.61.1 |
+| <a name="module_container_definitions"></a> [container\_definitions](#module\_container\_definitions) | cloudposse/ecs-container-definition/aws | 0.61.2 |
 | <a name="module_label"></a> [label](#module\_label) | cloudposse/label/null | 0.25.0 |
 
 ### Resources
