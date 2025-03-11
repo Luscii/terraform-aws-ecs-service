@@ -2,14 +2,18 @@
 # Execution Role #
 # ############## #
 
+data "aws_iam_role" "execution" {
+  name = var.execution_role_name
+}
+
 resource "aws_iam_role_policy_attachment" "execution_ecr_public" {
-  role = var.execution_role_arn
+  role = data.aws_iam_role.execution.name
 
   policy_arn = "arn:aws:iam::aws:policy/AmazonElasticContainerRegistryPublicReadOnly"
 }
 
 resource "aws_iam_role_policy_attachment" "execution_ecs_task" {
-  role = var.execution_role_arn
+  role = data.aws_iam_role.execution.name
 
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
@@ -18,8 +22,12 @@ resource "aws_iam_role_policy_attachment" "execution_ecs_task" {
 # Task Role #
 # ######### #
 
+data "aws_iam_role" "task" {
+  name = var.task_role_name
+}
+
 resource "aws_iam_role_policy_attachment" "task_xray_daemon" {
-  role = var.task_role_arn
+  role = data.aws_iam_role.task.name
 
   policy_arn = "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"
 }
@@ -42,6 +50,6 @@ resource "aws_iam_role_policy" "task_ecs_exec" {
   count = var.enable_ecs_execute_command ? 1 : 0
 
   name   = join("-", [module.label.id, "ecs-exec"])
-  role   = var.task_role_arn
+  role   = data.aws_iam_role.task.name
   policy = data.aws_iam_policy_document.task_ecs_exec
 }
