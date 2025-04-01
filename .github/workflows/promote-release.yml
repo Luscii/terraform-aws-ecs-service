@@ -18,7 +18,7 @@ jobs:
     steps:
       - name: Get Release
         id: get-release
-        uses: boite-nl/query-release-action@v1.0.1
+        uses: boite-nl/query-release-action@v1.0.2
         with:
           select: ${{ inputs.ref }}
 
