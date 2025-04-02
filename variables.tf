@@ -68,8 +68,9 @@ variable "task_memory" {
 
 variable "container_definitions" {
   type = list(object({
-    name  = string
-    image = string
+    name              = string
+    image             = string
+    pull_cache_prefix = optional(string)
 
     cpu                = optional(number)
     memory             = optional(number)
@@ -123,7 +124,7 @@ variable "container_definitions" {
     start_timeout = optional(number)
     stop_timeout  = optional(number)
   }))
-  description = "List of container definitions, accepts the output of the module https://github.com/cloudposse/terraform-aws-ecs-container-definition"
+  description = "List of container definitions, accepts the inputs of the module https://github.com/cloudposse/terraform-aws-ecs-container-definition"
 }
 
 variable "task_role_name" {
