@@ -4,7 +4,7 @@ resource "aws_security_group" "this" {
   vpc_id      = var.vpc_id
 
   ingress {
-    description = "Allow requestss from within the Security Group"
+    description = "Allow requests from within the Security Group"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
