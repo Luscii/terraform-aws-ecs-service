@@ -23,6 +23,7 @@ version-resolver:
     labels:
       - "patch"
       - "bug"
+      - "dependencies"
   default: patch
 
 categories:
