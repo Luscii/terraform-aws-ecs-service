@@ -15,8 +15,6 @@ labels:
     branch: "^cleanup/.+"
   - label: patch
     branch: "^enhancement/.+"
-  - label: patch
-    branch: "^dependabot/.+"
 
   # Type Labels
   - label: feature
