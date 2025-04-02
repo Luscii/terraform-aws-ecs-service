@@ -38,6 +38,9 @@ categories:
   - title: "📚 Documentation"
     labels:
       - documentation
+  - title: "🚧 Dependencies"
+    labels:
+      - dependencies
   - title: "🔨 Maintenance"
     labels:
       - patch
