@@ -68,8 +68,9 @@ variable "task_memory" {
 
 variable "container_definitions" {
   type = list(object({
-    name  = string
-    image = string
+    name              = string
+    image             = string
+    pull_cache_prefix = optional(string)
 
     cpu                = optional(number)
     memory             = optional(number)

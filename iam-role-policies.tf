@@ -18,6 +18,30 @@ resource "aws_iam_role_policy_attachment" "execution_ecs_task" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
+data "aws_iam_policy_document" "execution_pull_cache" {
+  count = length(local.pull_cache_rule_arns) > 0 ? 1 : 0
+
+  statement {
+    sid    = "ECRPullThroughCache"
+    effect = "Allow"
+
+    actions = [
+      "ecr:CreateRepository",
+      "ecr:BatchImportUpstreamImage"
+    ]
+
+    resources = [for arn in values(local.pull_cache_rule_arns) : "${arn}/*"]
+  }
+}
+
+resource "aws_iam_role_policy" "execution_pull_cache" {
+  count = length(data.aws_iam_policy_document.execution_pull_cache) > 0 ? 1 : 0
+
+  name   = join("-", [module.label.id, "ecr-pull-cache"])
+  role   = data.aws_iam_role.execution.name
+  policy = data.aws_iam_policy_document.execution_pull_cache[count.index].json
+}
+
 # ######### #
 # Task Role #
 # ######### #

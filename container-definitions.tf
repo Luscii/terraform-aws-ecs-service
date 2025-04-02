@@ -8,9 +8,12 @@ module "container_definitions" {
 
   count = length(local.container_definitions)
 
-  container_name  = local.container_definitions[count.index].name
-  container_image = local.container_definitions[count.index].image
-  essential       = local.container_definitions[count.index].essential
+  container_name = local.container_definitions[count.index].name
+  container_image = (lookup(local.container_definitions[count.index], "pull_cache_prefix", "") == ""
+    ? local.container_definitions[count.index].image
+    : "${local.pull_cache_rule_urls[local.container_definitions[count.index].pull_cache_prefix]}${local.container_definitions[count.index].image}"
+  )
+  essential = local.container_definitions[count.index].essential
 
   container_cpu                = local.container_definitions[count.index].cpu
   container_memory             = contains(keys(local.container_definitions[count.index]), "memory") ? local.container_definitions[count.index].memory : null
