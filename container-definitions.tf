@@ -11,7 +11,7 @@ module "container_definitions" {
   container_name = local.container_definitions[count.index].name
   container_image = (lookup(local.container_definitions[count.index], "pull_cache_prefix", "") == ""
     ? local.container_definitions[count.index].image
-    : "${local.pull_cache_rule_urls[local.container_definitions[count.index].pull_cache_prefix]}${local.container_definitions[count.index].image}"
+    : "${lookup(local.pull_cache_rule_urls, local.container_definitions[count.index].pull_cache_prefix, "")}${local.container_definitions[count.index].image}"
   )
   essential = local.container_definitions[count.index].essential
 
