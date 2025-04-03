@@ -75,5 +75,5 @@ resource "aws_iam_role_policy" "task_ecs_exec" {
 
   name   = join("-", [module.label.id, "ecs-exec"])
   role   = data.aws_iam_role.task.name
-  policy = data.aws_iam_policy_document.task_ecs_exec
+  policy = data.aws_iam_policy_document.task_ecs_exec.json
 }
