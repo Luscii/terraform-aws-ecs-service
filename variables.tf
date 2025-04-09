@@ -127,14 +127,19 @@ variable "container_definitions" {
   description = "List of container definitions, accepts the inputs of the module https://github.com/cloudposse/terraform-aws-ecs-container-definition"
 }
 
-variable "task_role_name" {
-  type        = string
-  description = "Name for the IAM Role used as the task role"
+variable "task_role" {
+  type = object({
+    name = string
+    arn  = string
+  })
+  description = "IAM Role used as the task role"
 }
-
-variable "execution_role_name" {
-  type        = string
-  description = "Name for the IAM Role used as the execution role"
+variable "execution_role" {
+  type = object({
+    name = string
+    arn  = string
+  })
+  description = "IAM Role used as the execution role"
 }
 
 variable "enable_ecs_execute_command" {

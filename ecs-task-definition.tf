@@ -13,8 +13,8 @@ resource "aws_ecs_task_definition" "this" {
   cpu    = var.task_cpu
   memory = var.task_memory
 
-  task_role_arn      = data.aws_iam_role.task.arn
-  execution_role_arn = data.aws_iam_role.execution.arn
+  task_role_arn      = var.task_role.arn
+  execution_role_arn = var.execution_role.arn
 
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
