@@ -31,7 +31,7 @@ module "sc_service" {
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | 5.89.0 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | 5.93.0 |
 
 ### Modules
 
@@ -63,8 +63,6 @@ module "sc_service" {
 | [aws_ecs_cluster.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/ecs_cluster) | data source |
 | [aws_iam_policy_document.execution_pull_cache](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_iam_policy_document.task_ecs_exec](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
-| [aws_iam_role.execution](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_role) | data source |
-| [aws_iam_role.task](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_role) | data source |
 | [aws_region.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/region) | data source |
 
 ### Inputs
@@ -78,7 +76,7 @@ module "sc_service" {
 | <a name="input_ecs_cluster_name"></a> [ecs\_cluster\_name](#input\_ecs\_cluster\_name) | Name of the ECS cluster in which the service is deployed | `string` | n/a | yes |
 | <a name="input_egress_rules"></a> [egress\_rules](#input\_egress\_rules) | Egress rules for the default security group for the service | <pre>list(object({<br/>    description = string<br/>    from_port   = number<br/>    to_port     = number<br/>    protocol    = optional(string, "-1")<br/><br/>    cidr_blocks      = optional(list(string))<br/>    ipv6_cidr_blocks = optional(list(string))<br/>    prefix_list_ids  = optional(list(string))<br/>    security_groups  = optional(list(string))<br/>    self             = optional(bool)<br/>  }))</pre> | `[]` | no |
 | <a name="input_enable_ecs_execute_command"></a> [enable\_ecs\_execute\_command](#input\_enable\_ecs\_execute\_command) | Enables ECS exec to the service and attaches required IAM policy to task role | `bool` | `false` | no |
-| <a name="input_execution_role_name"></a> [execution\_role\_name](#input\_execution\_role\_name) | Name for the IAM Role used as the execution role | `string` | n/a | yes |
+| <a name="input_execution_role"></a> [execution\_role](#input\_execution\_role) | IAM Role used as the execution role | <pre>object({<br/>    name = string<br/>    arn  = string<br/>  })</pre> | n/a | yes |
 | <a name="input_force_new_deployment"></a> [force\_new\_deployment](#input\_force\_new\_deployment) | Whether to force a new deployment of the service. This can be used to update the service with a new task definition | `bool` | `false` | no |
 | <a name="input_high_traffic_service"></a> [high\_traffic\_service](#input\_high\_traffic\_service) | Whether the service is a high traffic service: >500 requests/second | `bool` | `false` | no |
 | <a name="input_ingress_rules"></a> [ingress\_rules](#input\_ingress\_rules) | Ingress rules for the default security group for the service | <pre>list(object({<br/>    description = string<br/>    from_port   = number<br/>    to_port     = number<br/>    protocol    = optional(string, "-1")<br/><br/>    cidr_blocks      = optional(list(string))<br/>    ipv6_cidr_blocks = optional(list(string))<br/>    prefix_list_ids  = optional(list(string))<br/>    security_groups  = optional(list(string))<br/>    self             = optional(bool)<br/>  }))</pre> | `[]` | no |
@@ -93,7 +91,7 @@ module "sc_service" {
 | <a name="input_subnets"></a> [subnets](#input\_subnets) | List of Subnet ids in which the Service runs | `list(string)` | n/a | yes |
 | <a name="input_task_cpu"></a> [task\_cpu](#input\_task\_cpu) | value in cpu units for the task | `number` | n/a | yes |
 | <a name="input_task_memory"></a> [task\_memory](#input\_task\_memory) | value in MiB for the task | `number` | n/a | yes |
-| <a name="input_task_role_name"></a> [task\_role\_name](#input\_task\_role\_name) | Name for the IAM Role used as the task role | `string` | n/a | yes |
+| <a name="input_task_role"></a> [task\_role](#input\_task\_role) | IAM Role used as the task role | <pre>object({<br/>    name = string<br/>    arn  = string<br/>  })</pre> | n/a | yes |
 | <a name="input_vpc_id"></a> [vpc\_id](#input\_vpc\_id) | ID of the VPC in which the service is deployed | `string` | n/a | yes |
 
 ### Outputs
