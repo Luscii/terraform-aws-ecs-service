@@ -1,5 +1,5 @@
 locals {
-  container_definitions = concat(var.container_definitions, [local.xray_container_definition])
+  container_definitions = concat(var.container_definitions, var.add_xray_container ? [local.xray_container_definition] : [])
 }
 
 module "container_definitions" {

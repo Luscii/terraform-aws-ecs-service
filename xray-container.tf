@@ -1,7 +1,7 @@
 locals {
   xray_container_definition = {
     name               = "xray-daemon"
-    image              = "amazon/aws-xray-daemon:3.x"
+    image              = var.xray_container_image
     pull_cache_prefix  = ""
     cpu                = 128
     memory             = 256

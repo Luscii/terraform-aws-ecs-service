@@ -309,3 +309,14 @@ variable "scaling_target" {
     error_message = "When predefined metric type is ALBRequestCountPerTarget, resource_label must be set and following the format defined on https://docs.aws.amazon.com/autoscaling/ec2/APIReference/API_PredefinedMetricSpecification.html"
   }
 }
+
+variable "add_xray_container" {
+  type        = bool
+  description = "Whether to add the xray daemon container to the task definition"
+  default     = true
+}
+variable "xray_container_image" {
+  type        = string
+  description = "The xray daemon container image"
+  default     = "amazon/aws-xray-daemon:3.x"
+}

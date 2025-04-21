@@ -44,6 +44,8 @@ resource "aws_iam_role_policy" "execution_pull_cache" {
 # ######### #
 
 resource "aws_iam_role_policy_attachment" "task_xray_daemon" {
+  count = var.add_xray_container ? 1 : 0
+
   role = var.task_role.name
 
   policy_arn = "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"
