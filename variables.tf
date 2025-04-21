@@ -197,6 +197,7 @@ variable "service_connect_configuration" {
     }))
   })
   description = "Service discovery configuration for the service"
+  default     = null
 }
 
 variable "ingress_rules" {
