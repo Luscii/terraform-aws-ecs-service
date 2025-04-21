@@ -41,29 +41,33 @@ resource "aws_ecs_service" "this" {
     assign_public_ip = var.assign_public_ip
   }
 
-  service_connect_configuration {
-    enabled   = true
-    namespace = var.service_connect_configuration.namespace
+  dynamic "service_connect_configuration" {
+    for_each = var.service_connect_configuration != null ? [var.service_connect_configuration] : []
 
-    service {
-      discovery_name = var.service_connect_configuration.discovery_name
-      port_name      = var.service_connect_configuration.port_name
+    content {
+      enabled   = true
+      namespace = service_connect_configuration.value.namespace
 
-      client_alias {
-        dns_name = var.service_connect_configuration.client_alias.dns_name
-        port     = var.service_connect_configuration.client_alias.port
+      service {
+        discovery_name = service_connect_configuration.value.discovery_name
+        port_name      = service_connect_configuration.value.port_name
+
+        client_alias {
+          dns_name = service_connect_configuration.value.client_alias.dns_name
+          port     = service_connect_configuration.value.client_alias.port
+        }
       }
-    }
 
-    dynamic "log_configuration" {
-      for_each = var.service_connect_configuration.cloudwatch != null ? [var.service_connect_configuration.cloudwatch] : []
+      dynamic "log_configuration" {
+        for_each = service_connect_configuration.value.cloudwatch != null ? [service_connect_configuration.value.cloudwatch] : []
 
-      content {
-        log_driver = "awslogs"
-        options = {
-          "awslogs-group"         = log_configuration.value.log_group
-          "awslogs-region"        = log_configuration.value.region
-          "awslogs-stream-prefix" = "service-connect"
+        content {
+          log_driver = "awslogs"
+          options = {
+            "awslogs-group"         = log_configuration.value.log_group
+            "awslogs-region"        = log_configuration.value.region
+            "awslogs-stream-prefix" = "service-connect"
+          }
         }
       }
     }
