@@ -31,7 +31,7 @@ module "sc_service" {
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | 5.93.0 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | 5.95.0 |
 
 ### Modules
 
@@ -69,6 +69,7 @@ module "sc_service" {
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
+| <a name="input_add_xray_container"></a> [add\_xray\_container](#input\_add\_xray\_container) | Whether to add the xray daemon container to the task definition | `bool` | `true` | no |
 | <a name="input_assign_public_ip"></a> [assign\_public\_ip](#input\_assign\_public\_ip) | Whether the service needs a public ip | `bool` | `false` | no |
 | <a name="input_container_definitions"></a> [container\_definitions](#input\_container\_definitions) | List of container definitions, accepts the inputs of the module https://github.com/cloudposse/terraform-aws-ecs-container-definition | <pre>list(object({<br/>    name              = string<br/>    image             = string<br/>    pull_cache_prefix = optional(string, "")<br/><br/>    cpu                = optional(number)<br/>    memory             = optional(number)<br/>    memory_reservation = optional(number)<br/><br/>    depends_on = optional(list(object({<br/>      condition     = string<br/>      containerName = string<br/>      }))<br/>    )<br/>    essential = optional(bool, true)<br/><br/>    port_mappings = optional(list(object({<br/>      containerPort = number<br/>      protocol      = optional(string, "tcp")<br/>      name          = optional(string)<br/>    })))<br/><br/>    healthcheck = optional(object({<br/>      command     = list(string)<br/>      interval    = optional(number)<br/>      retries     = optional(number)<br/>      startPeriod = optional(number)<br/>      timeout     = optional(number)<br/>    }))<br/>    entrypoint        = optional(list(string))<br/>    command           = optional(list(string))<br/>    working_directory = optional(string)<br/>    environment = optional(list(object({<br/>      name  = string<br/>      value = string<br/>    })))<br/>    secrets = optional(list(object({<br/>      name      = string<br/>      valueFrom = string<br/>    })))<br/>    log_configuration = optional(object({<br/>      logDriver = string<br/>      options   = optional(map(string))<br/>      secretOptions = optional(list(object({<br/>        name      = string<br/>        valueFrom = string<br/>      })))<br/>    }))<br/>    ulimits = optional(list(object({<br/>      hardLimit = number<br/>      name      = string<br/>      softLimit = number<br/>    })))<br/>    user          = optional(string)<br/>    start_timeout = optional(number)<br/>    stop_timeout  = optional(number)<br/>  }))</pre> | n/a | yes |
 | <a name="input_context"></a> [context](#input\_context) | Single object for setting entire context at once.<br/>See description of individual variables for details.<br/>Leave string and numeric variables as `null` to use default value.<br/>Individual variable settings (non-null) override settings in context object,<br/>except for attributes, tags, and additional\_tag\_map, which are merged. | `any` | <pre>{<br/>  "additional_tag_map": {},<br/>  "attributes": [],<br/>  "delimiter": null,<br/>  "descriptor_formats": {},<br/>  "enabled": true,<br/>  "environment": null,<br/>  "id_length_limit": null,<br/>  "label_key_case": null,<br/>  "label_order": [],<br/>  "label_value_case": null,<br/>  "labels_as_tags": [<br/>    "unset"<br/>  ],<br/>  "name": null,<br/>  "namespace": null,<br/>  "regex_replace_chars": null,<br/>  "stage": null,<br/>  "tags": {},<br/>  "tenant": null<br/>}</pre> | no |
@@ -93,6 +94,7 @@ module "sc_service" {
 | <a name="input_task_memory"></a> [task\_memory](#input\_task\_memory) | value in MiB for the task | `number` | n/a | yes |
 | <a name="input_task_role"></a> [task\_role](#input\_task\_role) | IAM Role used as the task role | <pre>object({<br/>    name = string<br/>    arn  = string<br/>  })</pre> | n/a | yes |
 | <a name="input_vpc_id"></a> [vpc\_id](#input\_vpc\_id) | ID of the VPC in which the service is deployed | `string` | n/a | yes |
+| <a name="input_xray_container_image"></a> [xray\_container\_image](#input\_xray\_container\_image) | The xray daemon container image | `string` | `"amazon/aws-xray-daemon:3.x"` | no |
 
 ### Outputs
 
