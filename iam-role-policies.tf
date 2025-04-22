@@ -23,6 +23,7 @@ data "aws_iam_policy_document" "execution_pull_cache" {
     effect = "Allow"
 
     actions = [
+      "ecr:ReplicateImage",
       "ecr:CreateRepository",
       "ecr:BatchImportUpstreamImage"
     ]
