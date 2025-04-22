@@ -18,3 +18,13 @@ locals {
     prefix => "arn:aws:ecr:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:repository/${rule.ecr_repository_prefix}"
   }
 }
+
+data "aws_secretsmanager_secret" "pull_through_cache_credentials" {
+  for_each = data.aws_ecr_pull_through_cache_rule.this
+
+  arn = each.value.credential_arn
+}
+
+locals {
+  pull_cache_credential_arns = distinct([for secret in data.aws_secretsmanager_secret.pull_through_cache_credentials : secret.arn])
+}
