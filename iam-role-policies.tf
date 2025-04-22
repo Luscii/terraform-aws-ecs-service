@@ -29,6 +29,14 @@ data "aws_iam_policy_document" "execution_pull_cache" {
 
     resources = [for arn in values(local.pull_cache_rule_arns) : "${arn}/*"]
   }
+  statement {
+    sid    = "ECRPullThroughCacheCredentials"
+    effect = "Allow"
+    actions = [
+      "secretsmanager:GetSecretValue"
+    ]
+    resources = concat(local.pull_cache_credential_arns)
+  }
 }
 
 resource "aws_iam_role_policy" "execution_pull_cache" {
