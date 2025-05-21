@@ -2,8 +2,11 @@ locals {
   container_definitions_encoded = [for definition in module.container_definitions : definition.json_map_encoded]
   container_definitions_list    = "[${join(",", local.container_definitions_encoded)}]"
 
-  required_cpu    = sum([for definition in module.container_definitions : contains(keys(definition.json_map_object), "cpu") ? definition.json_map_object.cpu : 0]) + (var.high_traffic_service ? 512 : 256)
-  required_memory = sum([for definition in module.container_definitions : contains(keys(definition.json_map_object), "memory") ? definition.json_map_object.memory : 0]) + (var.high_traffic_service ? 128 : 64)
+  required_envoy_cpu = var.service_connect_configuration != null ? (var.high_traffic_service ? 512 : 256) : 0
+  required_envoy_mem = var.service_connect_configuration != null ? (var.high_traffic_service ? 128 : 64) : 0
+
+  required_cpu    = sum([for definition in module.container_definitions : contains(keys(definition.json_map_object), "cpu") ? definition.json_map_object.cpu : 0]) + local.required_envoy_cpu
+  required_memory = sum([for definition in module.container_definitions : contains(keys(definition.json_map_object), "memory") ? definition.json_map_object.memory : 0]) + local.required_envoy_mem
 }
 
 resource "aws_ecs_task_definition" "this" {
