@@ -49,17 +49,17 @@ output "scaling_target" {
 }
 
 output "service_discovery_name" {
-  value       = aws_ecs_service.this.service_connect_configuration[0].service[0].discovery_name
+  value       = length(aws_ecs_service.this.service_connect_configuration) > 0 && length(aws_ecs_service.this.service_connect_configuration[0].service) > 0 ? aws_ecs_service.this.service_connect_configuration[0].service[0].discovery_name : null
   description = "The service discovery name for the service"
 }
 
 output "service_discovery_client_aliases" {
-  value       = aws_ecs_service.this.service_connect_configuration[0].service[0].client_alias
+  value       = length(aws_ecs_service.this.service_connect_configuration) > 0 ? aws_ecs_service.this.service_connect_configuration[0].service[*].client_alias : null
   description = "The service discovery client aliases for the service"
 }
 
 output "service_discovery_internal_url" {
-  value       = "http://${aws_ecs_service.this.service_connect_configuration[0].service[0].client_alias[0].dns_name}:${aws_ecs_service.this.service_connect_configuration[0].service[0].client_alias[0].port}"
+  value       = length(aws_ecs_service.this.service_connect_configuration) > 0 && length(aws_ecs_service.this.service_connect_configuration[0].service) > 0 && length(aws_ecs_service.this.service_connect_configuration[0].service[0].client_alias) > 0 ? "http://${aws_ecs_service.this.service_connect_configuration[0].service[0].client_alias[0].dns_name}:${aws_ecs_service.this.service_connect_configuration[0].service[0].client_alias[0].port}" : null
   description = "Base URL for the service internally"
 }
 
