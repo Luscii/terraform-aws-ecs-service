@@ -184,13 +184,13 @@ variable "high_traffic_service" {
 
 variable "service_connect_configuration" {
   type = object({
-    namespace      = string
-    discovery_name = string
-    port_name      = string
-    client_alias = object({
+    namespace      = optional(string)
+    discovery_name = optional(string)
+    port_name      = optional(string)
+    client_alias = optional(object({
       dns_name = string
       port     = number
-    })
+    }))
     cloudwatch = optional(object({
       log_group = string
       region    = string
