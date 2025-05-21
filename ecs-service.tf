@@ -97,7 +97,7 @@ resource "aws_ecs_service" "this" {
     ignore_changes = [desired_count]
 
     precondition {
-      condition     = local.service_connect_port_name == null || contains(local.container_all_port_names, local.service_connect_port_name)
+      condition     = local.service_connect_port_name == null ? true : contains(local.container_all_port_names, local.service_connect_port_name)
       error_message = "Port name must be one of the container port names"
     }
     precondition {
