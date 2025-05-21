@@ -26,12 +26,12 @@ resource "aws_ecs_task_definition" "this" {
 
   lifecycle {
     precondition {
-      condition     = var.task_cpu > local.required_cpu
+      condition     = var.task_cpu >= local.required_cpu
       error_message = "task_cpu must be greater than the sum of CPU (${nonsensitive(local.required_cpu)}) for all containers in the task definition, including envoy (256 or 512)"
     }
 
     precondition {
-      condition     = var.task_memory > local.required_memory
+      condition     = var.task_memory >= local.required_memory
       error_message = "value must be greater than the sum of Memory (${nonsensitive(local.required_memory)} Mb) for all containers in the task definition"
     }
     precondition {
