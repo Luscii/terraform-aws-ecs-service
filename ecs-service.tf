@@ -14,6 +14,12 @@ locals {
   }
   container_all_port_names      = flatten([for _name, names in local.container_port_names : names])
   load_balancer_container_names = length(var.load_balancers) > 0 ? [for lb in var.load_balancers : lb.container_name] : []
+
+  service_connect_port_name = var.service_connect_configuration != null ? lookup(
+    var.service_connect_configuration,
+    "port_name",
+    null
+  ) : null
 }
 
 resource "aws_ecs_service" "this" {
@@ -91,7 +97,7 @@ resource "aws_ecs_service" "this" {
     ignore_changes = [desired_count]
 
     precondition {
-      condition     = var.service_connect_configuration == null || contains(local.container_all_port_names, var.service_connect_configuration.port_name)
+      condition     = local.service_connect_port_name == null || contains(local.container_all_port_names, local.service_connect_port_name)
       error_message = "Port name must be one of the container port names"
     }
     precondition {
