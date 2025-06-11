@@ -37,13 +37,17 @@ data "aws_iam_policy_document" "execution_pull_cache" {
     ]
     resources = concat(local.pull_cache_credential_arns)
   }
-  statement {
-    sid    = "ECRPullThroughCacheKMS"
-    effect = "Allow"
-    actions = [
-      "kms:Decrypt"
-    ]
-    resources = concat([for key in data.aws_kms_key.pull_cache_credential_kms_keys : key.arn])
+  dynamic "statement" {
+    for_each = length(local.pull_cache_credential_kms_keys) > 0 ? [1] : []
+
+    content {
+      sid    = "ECRPullThroughCacheKMS"
+      effect = "Allow"
+      actions = [
+        "kms:Decrypt"
+      ]
+      resources = [for key in local.pull_cache_credential_kms_keys : data.aws_kms_key.pull_cache_credential_kms_keys[key].arn]
+    }
   }
 }
 
