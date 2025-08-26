@@ -12,7 +12,7 @@ data "aws_ecr_pull_through_cache_rule" "this" {
 
 locals {
   pull_cache_rule_urls = { for prefix, rule in data.aws_ecr_pull_through_cache_rule.this :
-    prefix => "${data.aws_caller_identity.current.account_id}.dkr.ecr.${data.aws_region.current.name}.amazonaws.com/${rule.ecr_repository_prefix}${endswith(rule.ecr_repository_prefix, "/") ? "" : "/"}"
+    prefix => "${data.aws_caller_identity.current.account_id}.dkr.ecr.${data.aws_region.current.region}.amazonaws.com/${rule.ecr_repository_prefix}${endswith(rule.ecr_repository_prefix, "/") ? "" : "/"}"
   }
   pull_cache_rule_arns = { for prefix, rule in data.aws_ecr_pull_through_cache_rule.this :
     prefix => "arn:aws:ecr:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:repository/${rule.ecr_repository_prefix}"
