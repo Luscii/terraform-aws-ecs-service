@@ -1,0 +1,17 @@
+name: Link release to Linear tasks
+on:
+  release:
+    types:
+      - published
+
+jobs:
+  link-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Link release to Linear tasks
+        uses: Luscii/gha-release-linker@1.0.0
+        with:
+          version-name: ${{ github.event.release.tag_name }}
+          linear-api-key: ${{ secrets.LINEAR_API_KEY }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          release-mode: both
