@@ -27,7 +27,7 @@ jobs:
         with:
           dx_instance: 'luscii'  # for luscii.getdx.net
           bearer: ${{ secrets.DX_BEARER_TOKEN }}
-          service: 'vitals-api'
+          service: 'tf-aws-ecs-service-module'
           environment: 'production'
           reference_id: ${{ github.run_id }}
           source_url: ${{ steps.get-release.outputs.url }}
