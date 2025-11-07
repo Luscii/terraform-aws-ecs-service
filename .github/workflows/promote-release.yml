@@ -21,6 +21,20 @@ jobs:
         uses: boite-nl/query-release-action@v1.0.2
         with:
           select: ${{ inputs.ref }}
+      - name: Create release in DX
+        if: steps.get-release.outputs.found == 'true'
+        uses: Luscii/gha-dx-create-deployment@v1
+        with:
+          dx_instance: 'luscii'  # for luscii.getdx.net
+          bearer: ${{ secrets.DX_BEARER_TOKEN }}
+          service: 'vitals-api'
+          environment: 'production'
+          reference_id: ${{ github.run_id }}
+          source_url: ${{ steps.get-release.outputs.url }}
+          metadata: |
+            {
+              "version": "${{ steps.get-release.outputs.tag_name }}"
+            }
 
   create-tags:
     runs-on: ubuntu-latest
