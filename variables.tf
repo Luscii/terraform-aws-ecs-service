@@ -338,7 +338,7 @@ variable "launch_type" {
   default     = null
 
   validation {
-    condition     = contains(["EC2", "FARGATE", "EXTERNAL"], var.launch_type)
+    condition     = var.launch_type == null || contains(["EC2", "FARGATE", "EXTERNAL"], var.launch_type)
     error_message = "Valid values are EC2, FARGATE and EXTERNAL. Launch type conflicts with capacity provider strategies, only either one can be set."
   }
 }
@@ -353,7 +353,7 @@ variable "capacity_provider_strategies" {
   default     = []
 
   validation {
-    condition     = (length(var.capacity_provider_strategies) == 0 || (var.force_new_deployment == true && var.launch_type == null))
-    error_message = "Capacity provider strategies require force_new_deployment to be true. It also conflicts with launch type, only either one can be set."
+    condition     = length(var.capacity_provider_strategies) == 0 || (var.launch_type == null && var.force_new_deployment == true)
+    error_message = "Capacity provider strategies require force_new_deployment to be true and cannot be set alongside launch_type. Only one can be set."
   }
 }
