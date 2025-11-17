@@ -27,7 +27,7 @@ resource "aws_ecs_service" "this" {
 
   cluster          = data.aws_ecs_cluster.this.arn
   task_definition  = aws_ecs_task_definition.this.arn
-  launch_type      = "FARGATE"
+  launch_type      = var.launch_type
   platform_version = var.platform_version
 
   enable_execute_command = var.enable_ecs_execute_command
@@ -36,6 +36,7 @@ resource "aws_ecs_service" "this" {
   force_new_deployment               = var.force_new_deployment
   deployment_minimum_healthy_percent = 50
   deployment_maximum_percent         = 400
+
   deployment_circuit_breaker {
     enable   = true
     rollback = true
@@ -45,6 +46,16 @@ resource "aws_ecs_service" "this" {
     subnets          = var.subnets
     security_groups  = concat([aws_security_group.this.id], var.security_group_ids)
     assign_public_ip = var.assign_public_ip
+  }
+
+  dynamic "capacity_provider_strategy" {
+    for_each = var.capacity_provider_strategies
+
+    content {
+      capacity_provider = capacity_provider_strategy.value.capacity_provider
+      base              = capacity_provider_strategy.value.base
+      weight            = capacity_provider_strategy.value.weight
+    }
   }
 
   dynamic "service_connect_configuration" {
