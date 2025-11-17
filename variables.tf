@@ -96,17 +96,21 @@ variable "container_definitions" {
       startPeriod = optional(number)
       timeout     = optional(number)
     }))
+
     entrypoint        = optional(list(string))
     command           = optional(list(string))
     working_directory = optional(string)
+
     environment = optional(list(object({
       name  = string
       value = string
     })))
+
     secrets = optional(list(object({
       name      = string
       valueFrom = string
     })))
+
     log_configuration = optional(object({
       logDriver = string
       options   = optional(map(string))
@@ -115,11 +119,13 @@ variable "container_definitions" {
         valueFrom = string
       })))
     }))
+
     ulimits = optional(list(object({
       hardLimit = number
       name      = string
       softLimit = number
     })))
+
     user          = optional(string)
     start_timeout = optional(number)
     stop_timeout  = optional(number)
@@ -134,6 +140,7 @@ variable "task_role" {
   })
   description = "IAM Role used as the task role"
 }
+
 variable "execution_role" {
   type = object({
     name = string
@@ -187,10 +194,12 @@ variable "service_connect_configuration" {
     namespace      = optional(string)
     discovery_name = optional(string)
     port_name      = optional(string)
+
     client_alias = optional(object({
       dns_name = string
       port     = number
     }))
+
     cloudwatch = optional(object({
       log_group = string
       region    = string
@@ -316,8 +325,30 @@ variable "add_xray_container" {
   description = "Whether to add the xray daemon container to the task definition"
   default     = true
 }
+
 variable "xray_container_image" {
   type        = string
   description = "The xray daemon container image"
   default     = "amazon/aws-xray-daemon:3.x"
+}
+
+variable "launch_type" {
+  type        = string
+  description = "The launch type on which to run your service. Valid values are EC2, FARGATE and EXTERNAL."
+  default     = null
+
+  validation {
+    condition     = var.launch_type == null || contains(["EC2", "FARGATE", "EXTERNAL"], var.launch_type)
+    error_message = "Valid launch_type values are EC2, FARGATE and EXTERNAL."
+  }
+}
+
+variable "capacity_provider_strategies" {
+  type = list(object({
+    capacity_provider = string
+    base              = optional(number, 0)
+    weight            = number
+  }))
+  description = "A list of capacity provider strategies to use for the service"
+  default     = []
 }
