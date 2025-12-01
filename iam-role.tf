@@ -52,7 +52,7 @@ data "aws_iam_policy_document" "execution_pull_cache" {
     sid       = "ECRPullThroughCacheCredentials"
     effect    = "Allow"
     actions   = ["secretsmanager:GetSecretValue"]
-    resources = local.pull_cache_credential_arns
+    resources = concat(local.pull_cache_credential_arns)
   }
 }
 
