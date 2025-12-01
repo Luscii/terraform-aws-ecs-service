@@ -7,7 +7,7 @@ resource "aws_cloudwatch_log_group" "this" {
 
 check "log_group_has_retention" {
   assert {
-    condition     = var.cloudwatch_log_group_arn == "" || var.log_retention_in_days != null
+    condition     = var.cloudwatch_log_group_arn != "" || var.log_retention_in_days != null
     error_message = "When creating a CloudWatch log group, log_retention_in_days must be set to a non-null value."
   }
 }
