@@ -1,6 +1,6 @@
-# Upgrade from v1.2.1 to v2.0.0
+# Upgrade from v1.2.1 to v1.3.0
 
-v2.0.0 introduces some backwards incompatible changes that require your attention.
+v1.3.0 introduces some changes that allow you to let the module create skeleton IAM roles for your ECS service.
 
 This document highlights common/known steps, but always verify your Terraform plan output.
 More or different steps may be needed for your setup to upgrade successfully.
@@ -12,7 +12,8 @@ Keep this in mind when looking at your plan. Nothing should be removed permanent
 
 **Scenario: MIGRATE IAM ROLES**
 
-The task role and execution role for the ECS service are now included in the module. You can move the existing ones:
+The task role and execution role for the ECS service are now included in the module.
+You can move any existing ones you may have in your project:
 
 ```bash
 terraform state mv aws_iam_role.execution 'module.<LABEL USED FOR THE ECS MODULE>.aws_iam_role.execution[0]'
