@@ -319,32 +319,9 @@ variable "add_xray_container" {
   description = "Whether to add the xray daemon container to the task definition"
   default     = true
 }
+
 variable "xray_container_image" {
   type        = string
   description = "The xray daemon container image"
   default     = "amazon/aws-xray-daemon:3.x"
-}
-
-variable "cloudwatch_log_group_arn" {
-  type        = string
-  description = "ARN of the CloudWatch log group to which the task logs will be sent, leave empty to create a new log group"
-  default     = ""
-}
-
-variable "log_retention_in_days" {
-  type        = number
-  description = "Number of days to retain log events in CloudWatch log group"
-  default     = null
-}
-
-variable "secrets_arns" {
-  type        = list(string)
-  description = "List of ARNs of the secrets in AWS Secrets Manager that need to be accessed by the task"
-  default     = []
-}
-
-variable "secrets_kms_key_arn" {
-  type        = string
-  description = "ARN of the KMS key used to encrypt secrets"
-  default     = ""
 }

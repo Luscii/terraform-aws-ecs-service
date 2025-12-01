@@ -42,7 +42,6 @@ module "sc_service" {
 | <a name="module_autoscaling_target_tracking_label"></a> [autoscaling\_target\_tracking\_label](#module\_autoscaling\_target\_tracking\_label) | cloudposse/label/null | 0.25.0 |
 | <a name="module_container_definitions"></a> [container\_definitions](#module\_container\_definitions) | cloudposse/ecs-container-definition/aws | 0.61.2 |
 | <a name="module_label"></a> [label](#module\_label) | cloudposse/label/null | 0.25.0 |
-| <a name="module_path"></a> [path](#module\_path) | cloudposse/label/null | 0.25.0 |
 
 ### Resources
 
@@ -51,14 +50,11 @@ module "sc_service" {
 | [aws_appautoscaling_policy.target](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/appautoscaling_policy) | resource |
 | [aws_appautoscaling_scheduled_action.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/appautoscaling_scheduled_action) | resource |
 | [aws_appautoscaling_target.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/appautoscaling_target) | resource |
-| [aws_cloudwatch_log_group.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_group) | resource |
 | [aws_ecs_service.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ecs_service) | resource |
 | [aws_ecs_task_definition.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ecs_task_definition) | resource |
-| [aws_iam_role.execution_role](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
-| [aws_iam_role.task_role](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
+| [aws_iam_role.execution](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
+| [aws_iam_role.task](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
 | [aws_iam_role_policy.execution_pull_cache](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
-| [aws_iam_role_policy.execution_role](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
-| [aws_iam_role_policy.execution_role_secrets](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
 | [aws_iam_role_policy.task_ecs_exec](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
 | [aws_iam_role_policy_attachment.execution_ecr_public](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.execution_ecs_task](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
@@ -69,8 +65,6 @@ module "sc_service" {
 | [aws_ecs_cluster.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/ecs_cluster) | data source |
 | [aws_iam_policy_document.assume_role](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_iam_policy_document.execution_pull_cache](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
-| [aws_iam_policy_document.execution_role](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
-| [aws_iam_policy_document.execution_role_secrets](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_iam_policy_document.task_ecs_exec](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_region.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/region) | data source |
 | [aws_secretsmanager_secret.pull_through_cache_credentials](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/secretsmanager_secret) | data source |
@@ -81,7 +75,6 @@ module "sc_service" {
 |------|-------------|------|---------|:--------:|
 | <a name="input_add_xray_container"></a> [add\_xray\_container](#input\_add\_xray\_container) | Whether to add the xray daemon container to the task definition | `bool` | `true` | no |
 | <a name="input_assign_public_ip"></a> [assign\_public\_ip](#input\_assign\_public\_ip) | Whether the service needs a public ip | `bool` | `false` | no |
-| <a name="input_cloudwatch_log_group_arn"></a> [cloudwatch\_log\_group\_arn](#input\_cloudwatch\_log\_group\_arn) | ARN of the CloudWatch log group to which the task logs will be sent, leave empty to create a new log group | `string` | `""` | no |
 | <a name="input_container_definitions"></a> [container\_definitions](#input\_container\_definitions) | List of container definitions, accepts the inputs of the module https://github.com/cloudposse/terraform-aws-ecs-container-definition | <pre>list(object({<br/>    name              = string<br/>    image             = string<br/>    pull_cache_prefix = optional(string, "")<br/><br/>    cpu                = optional(number)<br/>    memory             = optional(number)<br/>    memory_reservation = optional(number)<br/><br/>    depends_on = optional(list(object({<br/>      condition     = string<br/>      containerName = string<br/>      }))<br/>    )<br/>    essential = optional(bool, true)<br/><br/>    port_mappings = optional(list(object({<br/>      containerPort = number<br/>      protocol      = optional(string, "tcp")<br/>      name          = optional(string)<br/>    })))<br/><br/>    healthcheck = optional(object({<br/>      command     = list(string)<br/>      interval    = optional(number)<br/>      retries     = optional(number)<br/>      startPeriod = optional(number)<br/>      timeout     = optional(number)<br/>    }))<br/>    entrypoint        = optional(list(string))<br/>    command           = optional(list(string))<br/>    working_directory = optional(string)<br/>    environment = optional(list(object({<br/>      name  = string<br/>      value = string<br/>    })))<br/>    secrets = optional(list(object({<br/>      name      = string<br/>      valueFrom = string<br/>    })))<br/>    log_configuration = optional(object({<br/>      logDriver = string<br/>      options   = optional(map(string))<br/>      secretOptions = optional(list(object({<br/>        name      = string<br/>        valueFrom = string<br/>      })))<br/>    }))<br/>    ulimits = optional(list(object({<br/>      hardLimit = number<br/>      name      = string<br/>      softLimit = number<br/>    })))<br/>    user          = optional(string)<br/>    start_timeout = optional(number)<br/>    stop_timeout  = optional(number)<br/>  }))</pre> | n/a | yes |
 | <a name="input_context"></a> [context](#input\_context) | Single object for setting entire context at once.<br/>See description of individual variables for details.<br/>Leave string and numeric variables as `null` to use default value.<br/>Individual variable settings (non-null) override settings in context object,<br/>except for attributes, tags, and additional\_tag\_map, which are merged. | `any` | <pre>{<br/>  "additional_tag_map": {},<br/>  "attributes": [],<br/>  "delimiter": null,<br/>  "descriptor_formats": {},<br/>  "enabled": true,<br/>  "environment": null,<br/>  "id_length_limit": null,<br/>  "label_key_case": null,<br/>  "label_order": [],<br/>  "label_value_case": null,<br/>  "labels_as_tags": [<br/>    "unset"<br/>  ],<br/>  "name": null,<br/>  "namespace": null,<br/>  "regex_replace_chars": null,<br/>  "stage": null,<br/>  "tags": {},<br/>  "tenant": null<br/>}</pre> | no |
 | <a name="input_desired_count"></a> [desired\_count](#input\_desired\_count) | Desired number of tasks that need to be running for the service | `number` | `1` | no |
@@ -93,14 +86,11 @@ module "sc_service" {
 | <a name="input_high_traffic_service"></a> [high\_traffic\_service](#input\_high\_traffic\_service) | Whether the service is a high traffic service: >500 requests/second | `bool` | `false` | no |
 | <a name="input_ingress_rules"></a> [ingress\_rules](#input\_ingress\_rules) | Ingress rules for the default security group for the service | <pre>list(object({<br/>    description = string<br/>    from_port   = number<br/>    to_port     = number<br/>    protocol    = optional(string, "-1")<br/><br/>    cidr_blocks      = optional(list(string))<br/>    ipv6_cidr_blocks = optional(list(string))<br/>    prefix_list_ids  = optional(list(string))<br/>    security_groups  = optional(list(string))<br/>    self             = optional(bool)<br/>  }))</pre> | `[]` | no |
 | <a name="input_load_balancers"></a> [load\_balancers](#input\_load\_balancers) | List of load balancers to attach to the service | <pre>list(object({<br/>    target_group_arn = string<br/>    container_name   = string<br/>    container_port   = number<br/>  }))</pre> | `[]` | no |
-| <a name="input_log_retention_in_days"></a> [log\_retention\_in\_days](#input\_log\_retention\_in\_days) | Number of days to retain log events in CloudWatch log group | `number` | `null` | no |
 | <a name="input_name"></a> [name](#input\_name) | Name of the ECS service | `string` | n/a | yes |
 | <a name="input_platform_version"></a> [platform\_version](#input\_platform\_version) | Platform version for the ECS service | `string` | `"LATEST"` | no |
 | <a name="input_scaling"></a> [scaling](#input\_scaling) | Scaling configuration for the service. Enables scaling | <pre>object({<br/>    min_capacity = number<br/>    max_capacity = number<br/>  })</pre> | `null` | no |
 | <a name="input_scaling_scheduled"></a> [scaling\_scheduled](#input\_scaling\_scheduled) | Scheduled scaling policies for the service. Enables Scheduled scaling | <pre>map(object({<br/>    schedule     = string<br/>    timezone     = string<br/>    min_capacity = number<br/>    max_capacity = number<br/>  }))</pre> | `null` | no |
 | <a name="input_scaling_target"></a> [scaling\_target](#input\_scaling\_target) | Target tracking scaling policies for the service. Enables Target tracking scaling. Predefined metric type must be one of ECSServiceAverageCPUUtilization, ALBRequestCountPerTarget or ECSServiceAverageMemoryUtilization - https://docs.aws.amazon.com/autoscaling/application/APIReference/API_PredefinedMetricSpecification.html | <pre>map(object({<br/>    predefined_metric_type = string<br/>    resource_label         = optional(string)<br/>    target_value           = number<br/>    scale_in_cooldown      = optional(number, 300)<br/>    scale_out_cooldown     = optional(number, 300)<br/>  }))</pre> | `null` | no |
-| <a name="input_secrets_arns"></a> [secrets\_arns](#input\_secrets\_arns) | List of ARNs of the secrets in AWS Secrets Manager that need to be accessed by the task | `list(string)` | `[]` | no |
-| <a name="input_secrets_kms_key_arn"></a> [secrets\_kms\_key\_arn](#input\_secrets\_kms\_key\_arn) | ARN of the KMS key used to encrypt secrets | `string` | `""` | no |
 | <a name="input_security_group_ids"></a> [security\_group\_ids](#input\_security\_group\_ids) | List of additional security groups to attach to the service | `list(string)` | `[]` | no |
 | <a name="input_service_connect_configuration"></a> [service\_connect\_configuration](#input\_service\_connect\_configuration) | Service discovery configuration for the service | <pre>object({<br/>    namespace      = optional(string)<br/>    discovery_name = optional(string)<br/>    port_name      = optional(string)<br/>    client_alias = optional(object({<br/>      dns_name = string<br/>      port     = number<br/>    }))<br/>    cloudwatch = optional(object({<br/>      log_group = string<br/>      region    = string<br/>    }))<br/>  })</pre> | `null` | no |
 | <a name="input_subnets"></a> [subnets](#input\_subnets) | List of Subnet ids in which the Service runs | `list(string)` | n/a | yes |
@@ -114,7 +104,6 @@ module "sc_service" {
 
 | Name | Description |
 |------|-------------|
-| <a name="output_cloudwatch_log_group_name"></a> [cloudwatch\_log\_group\_name](#output\_cloudwatch\_log\_group\_name) | The name of the CloudWatch log group |
 | <a name="output_cluster_arn"></a> [cluster\_arn](#output\_cluster\_arn) | The ARN of the ECS cluster |
 | <a name="output_cluster_name"></a> [cluster\_name](#output\_cluster\_name) | The name of the ECS cluster |
 | <a name="output_label_context"></a> [label\_context](#output\_label\_context) | Context of the label for subsequent use |

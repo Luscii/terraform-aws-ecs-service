@@ -8,11 +8,6 @@ output "cluster_name" {
   description = "The name of the ECS cluster"
 }
 
-output "cloudwatch_log_group_name" {
-  value       = try(aws_cloudwatch_log_group.this[0].name, null)
-  description = "The name of the CloudWatch log group"
-}
-
 output "cluster_arn" {
   value       = data.aws_ecs_cluster.this.arn
   description = "The ARN of the ECS cluster"
@@ -49,12 +44,12 @@ output "service_arn" {
 }
 
 output "service_task_role_arn" {
-  value       = try(aws_iam_role.task_role[0].arn, var.task_role.arn)
+  value       = try(aws_iam_role.task[0].arn, var.task_role.arn)
   description = "The ARN of the service task role"
 }
 
 output "service_execution_role_arn" {
-  value       = try(aws_iam_role.execution_role[0].arn, var.execution_role.arn)
+  value       = try(aws_iam_role.execution[0].arn, var.execution_role.arn)
   description = "The ARN of the service execution role"
 }
 
