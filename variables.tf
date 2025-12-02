@@ -132,14 +132,17 @@ variable "task_role" {
     name = string
     arn  = string
   })
-  description = "IAM Role used as the task role"
+  description = "IAM Role used as the task role, leave empty to create a new role"
+  default     = null
 }
+
 variable "execution_role" {
   type = object({
     name = string
     arn  = string
   })
-  description = "IAM Role used as the execution role"
+  description = "IAM Role used as the execution role, leave empty to create a new role"
+  default     = null
 }
 
 variable "enable_ecs_execute_command" {
@@ -316,6 +319,7 @@ variable "add_xray_container" {
   description = "Whether to add the xray daemon container to the task definition"
   default     = true
 }
+
 variable "xray_container_image" {
   type        = string
   description = "The xray daemon container image"
