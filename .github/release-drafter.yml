@@ -1,12 +1,14 @@
 name-template: "v$RESOLVED_VERSION"
 tag-template: "$RESOLVED_VERSION"
-change-template: |
-  - $TITLE (#$NUMBER)
+change-template: "- $TITLE @$AUTHOR (#$NUMBER)"
+no-changes-template: "- No changes"
 
 template: |
-  ## Changes
+  ## What's Changed
 
   $CHANGES
+
+  **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION
 
 prerelease: false
 latest: "true"
@@ -15,33 +17,58 @@ include-pre-releases: true
 version-resolver:
   major:
     labels:
-      - "major"
+      - "version: major"
   minor:
     labels:
-      - "minor"
+      - "version: minor"
   patch:
     labels:
-      - "patch"
+      - "version: patch"
       - "bug"
       - "dependencies"
   default: patch
 
 categories:
-  - title: "🚀 Features"
+  - title: "🚨 Breaking Changes"
     labels:
-      - major
-      - minor
-  - title: "🧷 Fixes"
+      - "version: major"
+  - title: "✨ New Features"
+    labels:
+      - "version: minor"
+      - feature
+  - title: "🐛 Bug Fixes"
     labels:
       - bug
       - fix
-      - maintenance
+  - title: "🏗️ Module Updates"
+    labels:
+      - infrastructure
   - title: "📚 Documentation"
     labels:
       - documentation
-  - title: "🚧 Dependencies"
+  - title: "📦 Examples"
+    labels:
+      - examples
+  - title: "⬆️ Dependency Updates"
     labels:
       - dependencies
-  - title: "🔨 Maintenance"
+    collapse-after: 3
+  - title: "🔧 Internal Changes"
     labels:
-      - patch
+      - "version: patch"
+      - maintenance
+      - chore
+    collapse-after: 5
+
+exclude-labels:
+  - skip-changelog
+  - internal
+  - "build definition"
+  - "AI: instructions"
+  - "AI: agents"
+
+replacers:
+  - search: '/^(feat|fix|chore|docs|style|refactor|perf|test|build|ci|revert)(!)?:\s*/i'
+    replace: ''
+  - search: '/\b(fix|close|resolve)(s|d)?\s+(#\d+)/gi'
+    replace: 'fixes #$3'

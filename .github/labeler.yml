@@ -1,22 +1,30 @@
 version: 1
 labels:
-  # VERSION LABELS
-  - label: major
+  # VERSION LABELS (based on branch)
+  - label: "version: major"
     branch: "^major/.+"
-  - label: minor
+  - label: "version: minor"
     branch: "^feature/.+"
-  - label: patch
+  - label: "version: patch"
     branch: "^chore/.+"
-  - label: patch
+  - label: "version: patch"
     branch: "^bug/.+"
-  - label: patch
+  - label: "version: patch"
     branch: "^hotfix/.+"
-  - label: patch
+  - label: "version: patch"
     branch: "^cleanup/.+"
-  - label: patch
+  - label: "version: patch"
     branch: "^enhancement/.+"
 
-  # Type Labels
+  # VERSION LABELS (based on conventional commit title)
+  - label: "version: major"
+    title: "^(\\w+)!:"
+  - label: "version: minor"
+    title: "^feat:"
+  - label: "version: patch"
+    title: "^(fix|chore):"
+
+  # Type Labels (based on branch)
   - label: feature
     branch: "^feature/.+"
   - label: bug
@@ -25,18 +33,40 @@ labels:
     branch: "^fix/.+"
   - label: bug
     branch: "^bug/.+"
+
+  # Type Labels (based on conventional commit title)
+  - label: feature
+    title: "^feat(!)?:"
+  - label: bug
+    title: "^fix(!)?:"
+  - label: chore
+    title: "^chore(!)?:"
+  - label: maintenance
+    title: "^chore(!)?:"
+
+  # File-based labels
   - label: documentation
     files:
-      - "*.md"
-      - "docs/*"
+      - ".*\\.md"
+      - "docs\\/.*"
+  - label: examples
+    files:
+      - "examples\\/.*"
   - label: "infrastructure"
     files:
-      - "*.tf"
-      - "*.tfvars"
+      - "^(?!examples\\/).*\\.tf$"
+      - "^(?!examples\\/).*\\.tfvars$"
   - label: "build definition"
     files:
-      - ".github/*"
-      - ".pre-commit-config.yaml"
+      - "\\.github\\/workflows\\/.*\\.yml"
+      - "\\.github\\/[^/]+\\.yml"
+  - label: "AI: instructions"
+    files:
+      - "\\.github\\/instructions\\/.*"
+      - "\\.github\\/copilot-instructions\\.md"
+  - label: "AI: agents"
+    files:
+      - "\\.github\\/agents\\/.*"
 
   # PR Size Labels
   - label: "PR-Size: S"
