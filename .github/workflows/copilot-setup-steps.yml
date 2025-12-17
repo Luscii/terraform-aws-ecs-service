@@ -49,5 +49,3 @@ jobs:
       # Pre-commit
       - name: Setup Pre-commit
         run: pip install pre-commit
-      - name: Run Pre-commit hooks
-        run: pre-commit run --all-files
