@@ -1,6 +1,6 @@
-# Upgrade from v1.2.1 to v1.3.0
+# Upgrade from v1.2.1 to v1.2.2
 
-v1.3.0 introduces some changes that allow you to let the module create skeleton IAM roles for your ECS service.
+v1.2.2 introduces some changes that allow you to let the module create skeleton IAM roles for your ECS service.
 
 This document highlights common/known steps, but always verify your Terraform plan output.
 More or different steps may be needed for your setup to upgrade successfully.
