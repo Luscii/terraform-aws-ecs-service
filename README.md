@@ -18,6 +18,127 @@ module "sc_service" {
 }
 ```
 
+### With Service Connect and DNS-based Service Discovery
+
+This example demonstrates how to configure both Service Connect (for ECS-to-ECS communication) and traditional DNS-based service discovery (for non-ECS clients like EC2 instances or Lambda functions).
+
+```terraform
+# Create a private DNS namespace for service discovery
+resource "aws_service_discovery_private_dns_namespace" "main" {
+  name = "internal.example.com"
+  vpc  = var.vpc_id
+}
+
+# ECS service with both Service Connect and DNS discovery
+module "api_service" {
+  source = "path/to/module"
+
+  name             = "api"
+  ecs_cluster_name = "my-cluster"
+  vpc_id           = var.vpc_id
+  subnets          = var.private_subnet_ids
+
+  task_cpu    = 256
+  task_memory = 512
+
+  execution_role = {
+    name = aws_iam_role.execution.name
+    arn  = aws_iam_role.execution.arn
+  }
+
+  task_role = {
+    name = aws_iam_role.task.name
+    arn  = aws_iam_role.task.arn
+  }
+
+  container_definitions = [
+    {
+      name  = "app"
+      image = "my-app:latest"
+
+      port_mappings = [
+        {
+          containerPort = 8080
+          protocol      = "tcp"
+          name          = "http"
+        }
+      ]
+
+      log_configuration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = "/ecs/my-app"
+          "awslogs-region"        = "eu-west-1"
+          "awslogs-stream-prefix" = "app"
+        }
+      }
+    }
+  ]
+
+  # Service Connect for ECS-to-ECS communication
+  service_connect_configuration = {
+    namespace      = "service-connect-namespace"
+    discovery_name = "api"
+    port_name      = "http"
+    client_alias = {
+      dns_name = "api"
+      port     = 8080
+    }
+  }
+
+  # Automatic DNS discovery for non-ECS clients (e.g., bastion EC2 instances)
+  # This creates Cloud Map services automatically based on service_connect_configuration
+  service_discovery_dns_namespace_ids = [
+    aws_service_discovery_private_dns_namespace.main.id
+  ]
+}
+```
+
+**How it works:**
+- **ECS services** with Service Connect can reach the API via `api:8080` (using the service mesh)
+- **Non-ECS clients** (like bastion EC2 instances) can reach the API via `api.internal.example.com:8080` (using traditional DNS A records)
+- The module automatically creates the Cloud Map service using the `client_alias.dns_name` as the service name
+- Container name and port are automatically mapped from the `service_connect_configuration.port_name`
+
+### Advanced: Manual Service Registry Configuration
+
+For more control over the service registry configuration, you can manually configure `service_registries`:
+
+```terraform
+# Manually create Cloud Map service
+resource "aws_service_discovery_service" "api" {
+  name = "custom-api-name"
+
+  dns_config {
+    namespace_id = aws_service_discovery_private_dns_namespace.main.id
+
+    dns_records {
+      ttl  = 60
+      type = "A"
+    }
+
+    routing_policy = "WEIGHTED"
+  }
+
+  health_check_custom_config {}
+}
+
+module "api_service" {
+  source = "path/to/module"
+
+  # ... other configuration ...
+
+  # Manual service registry configuration
+  service_registries = {
+    registry_arn   = aws_service_discovery_service.api.arn
+    container_name = "app"
+    container_port = 8080
+  }
+}
+```
+
+**Note:** You can use both `service_discovery_dns_namespace_ids` (automated) and `service_registries` (manual) simultaneously. The module will combine them automatically.
+
 ## Configuration
 <!-- BEGIN_TF_DOCS -->
 ### Requirements
@@ -52,6 +173,8 @@ module "sc_service" {
 | [aws_appautoscaling_target.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/appautoscaling_target) | resource |
 | [aws_ecs_service.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ecs_service) | resource |
 | [aws_ecs_task_definition.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ecs_task_definition) | resource |
+| [aws_iam_role.execution](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
+| [aws_iam_role.task](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
 | [aws_iam_role_policy.execution_pull_cache](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
 | [aws_iam_role_policy.task_ecs_exec](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
 | [aws_iam_role_policy_attachment.execution_ecr_public](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
@@ -61,6 +184,7 @@ module "sc_service" {
 | [aws_caller_identity.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |
 | [aws_ecr_pull_through_cache_rule.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/ecr_pull_through_cache_rule) | data source |
 | [aws_ecs_cluster.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/ecs_cluster) | data source |
+| [aws_iam_policy_document.assume_role](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_iam_policy_document.execution_pull_cache](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_iam_policy_document.task_ecs_exec](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_region.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/region) | data source |
@@ -79,7 +203,7 @@ module "sc_service" {
 | <a name="input_ecs_cluster_name"></a> [ecs\_cluster\_name](#input\_ecs\_cluster\_name) | Name of the ECS cluster in which the service is deployed | `string` | n/a | yes |
 | <a name="input_egress_rules"></a> [egress\_rules](#input\_egress\_rules) | Egress rules for the default security group for the service | <pre>list(object({<br/>    description = string<br/>    from_port   = number<br/>    to_port     = number<br/>    protocol    = optional(string, "-1")<br/><br/>    cidr_blocks      = optional(list(string))<br/>    ipv6_cidr_blocks = optional(list(string))<br/>    prefix_list_ids  = optional(list(string))<br/>    security_groups  = optional(list(string))<br/>    self             = optional(bool)<br/>  }))</pre> | `[]` | no |
 | <a name="input_enable_ecs_execute_command"></a> [enable\_ecs\_execute\_command](#input\_enable\_ecs\_execute\_command) | Enables ECS exec to the service and attaches required IAM policy to task role | `bool` | `false` | no |
-| <a name="input_execution_role"></a> [execution\_role](#input\_execution\_role) | IAM Role used as the execution role | <pre>object({<br/>    name = string<br/>    arn  = string<br/>  })</pre> | n/a | yes |
+| <a name="input_execution_role"></a> [execution\_role](#input\_execution\_role) | IAM Role used as the execution role, leave empty to create a new role | <pre>object({<br/>    name = string<br/>    arn  = string<br/>  })</pre> | `null` | no |
 | <a name="input_force_new_deployment"></a> [force\_new\_deployment](#input\_force\_new\_deployment) | Whether to force a new deployment of the service. This can be used to update the service with a new task definition | `bool` | `false` | no |
 | <a name="input_high_traffic_service"></a> [high\_traffic\_service](#input\_high\_traffic\_service) | Whether the service is a high traffic service: >500 requests/second | `bool` | `false` | no |
 | <a name="input_ingress_rules"></a> [ingress\_rules](#input\_ingress\_rules) | Ingress rules for the default security group for the service | <pre>list(object({<br/>    description = string<br/>    from_port   = number<br/>    to_port     = number<br/>    protocol    = optional(string, "-1")<br/><br/>    cidr_blocks      = optional(list(string))<br/>    ipv6_cidr_blocks = optional(list(string))<br/>    prefix_list_ids  = optional(list(string))<br/>    security_groups  = optional(list(string))<br/>    self             = optional(bool)<br/>  }))</pre> | `[]` | no |
@@ -94,7 +218,7 @@ module "sc_service" {
 | <a name="input_subnets"></a> [subnets](#input\_subnets) | List of Subnet ids in which the Service runs | `list(string)` | n/a | yes |
 | <a name="input_task_cpu"></a> [task\_cpu](#input\_task\_cpu) | value in cpu units for the task | `number` | n/a | yes |
 | <a name="input_task_memory"></a> [task\_memory](#input\_task\_memory) | value in MiB for the task | `number` | n/a | yes |
-| <a name="input_task_role"></a> [task\_role](#input\_task\_role) | IAM Role used as the task role | <pre>object({<br/>    name = string<br/>    arn  = string<br/>  })</pre> | n/a | yes |
+| <a name="input_task_role"></a> [task\_role](#input\_task\_role) | IAM Role used as the task role, leave empty to create a new role | <pre>object({<br/>    name = string<br/>    arn  = string<br/>  })</pre> | `null` | no |
 | <a name="input_vpc_id"></a> [vpc\_id](#input\_vpc\_id) | ID of the VPC in which the service is deployed | `string` | n/a | yes |
 | <a name="input_xray_container_image"></a> [xray\_container\_image](#input\_xray\_container\_image) | The xray daemon container image | `string` | `"amazon/aws-xray-daemon:3.x"` | no |
 
@@ -112,8 +236,10 @@ module "sc_service" {
 | <a name="output_service_discovery_client_aliases"></a> [service\_discovery\_client\_aliases](#output\_service\_discovery\_client\_aliases) | The service discovery client aliases for the service |
 | <a name="output_service_discovery_internal_url"></a> [service\_discovery\_internal\_url](#output\_service\_discovery\_internal\_url) | Base URL for the service internally |
 | <a name="output_service_discovery_name"></a> [service\_discovery\_name](#output\_service\_discovery\_name) | The service discovery name for the service |
+| <a name="output_service_execution_role_arn"></a> [service\_execution\_role\_arn](#output\_service\_execution\_role\_arn) | The ARN of the service execution role |
 | <a name="output_service_id"></a> [service\_id](#output\_service\_id) | The ID of the service |
 | <a name="output_service_name"></a> [service\_name](#output\_service\_name) | The name of the service |
+| <a name="output_service_task_role_arn"></a> [service\_task\_role\_arn](#output\_service\_task\_role\_arn) | The ARN of the service task role |
 | <a name="output_task_definition_arn"></a> [task\_definition\_arn](#output\_task\_definition\_arn) | The ARN of the task definition |
 | <a name="output_task_definition_family"></a> [task\_definition\_family](#output\_task\_definition\_family) | The family of the task definition |
 | <a name="output_task_definition_id"></a> [task\_definition\_id](#output\_task\_definition\_id) | The ID of the task definition |

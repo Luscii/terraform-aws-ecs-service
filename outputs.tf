@@ -43,6 +43,16 @@ output "service_arn" {
   description = "The ARN of the service"
 }
 
+output "service_task_role_arn" {
+  value       = try(aws_iam_role.task[0].arn, var.task_role.arn)
+  description = "The ARN of the service task role"
+}
+
+output "service_execution_role_arn" {
+  value       = try(aws_iam_role.execution[0].arn, var.execution_role.arn)
+  description = "The ARN of the service execution role"
+}
+
 output "scaling_target" {
   value       = local.scaling_enabled ? aws_appautoscaling_target.this[0] : null
   description = "The autoscaling target resource - https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/appautoscaling_target"

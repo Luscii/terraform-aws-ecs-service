@@ -21,12 +21,26 @@ jobs:
         uses: boite-nl/query-release-action@v1.0.2
         with:
           select: ${{ inputs.ref }}
+      - name: Create release in DX
+        if: steps.get-release.outputs.found == 'true'
+        uses: Luscii/gha-dx-create-deployment@v1
+        with:
+          dx_instance: 'luscii'  # for luscii.getdx.net
+          bearer: ${{ secrets.DX_BEARER_TOKEN }}
+          service: 'tf-aws-ecs-service-module'
+          environment: 'production'
+          reference_id: ${{ github.run_id }}
+          source_url: ${{ steps.get-release.outputs.url }}
+          metadata: |
+            {
+              "version": "${{ steps.get-release.outputs.tag_name }}"
+            }
 
   create-tags:
     runs-on: ubuntu-latest
     steps:
       - name: Clone Repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 1
           ref: ${{ inputs.ref }}
@@ -37,7 +51,7 @@ jobs:
           git fetch --prune --unshallow --tags
       - name: Generate tags
         id: tags
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         if: inputs.type == 'latest'
         with:
           script: |

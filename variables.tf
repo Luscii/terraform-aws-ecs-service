@@ -137,14 +137,17 @@ variable "task_role" {
     name = string
     arn  = string
   })
-  description = "IAM Role used as the task role"
+  description = "IAM Role used as the task role, leave empty to create a new role"
+  default     = null
 }
+
 variable "execution_role" {
   type = object({
     name = string
     arn  = string
   })
-  description = "IAM Role used as the execution role"
+  description = "IAM Role used as the execution role, leave empty to create a new role"
+  default     = null
 }
 
 variable "enable_ecs_execute_command" {
@@ -202,6 +205,43 @@ variable "service_connect_configuration" {
     }))
   })
   description = "Service discovery configuration for the service"
+  default     = null
+}
+
+variable "service_discovery_dns_namespace_ids" {
+  type        = list(string)
+  description = <<-EOT
+    List of AWS Cloud Map private DNS namespace IDs for automatic service discovery registration.
+    When provided, the module automatically creates Cloud Map services in these namespaces, enabling
+    DNS-based service discovery for non-ECS clients (EC2 instances, Lambda, etc.).
+
+    The service name is derived from service_connect_configuration.client_alias.dns_name.
+    The container name and port are automatically mapped from service_connect_configuration.
+
+    This provides an automated alternative to manually configuring service_registries.
+    Both approaches can be used simultaneously for different discovery scenarios.
+
+    Example: ["ns-1234567890abcdef", "ns-0987654321fedcba"]
+  EOT
+  default     = []
+}
+
+variable "service_registries" {
+  type = object({
+    registry_arn   = string
+    container_name = optional(string)
+    container_port = optional(number)
+  })
+  description = <<-EOT
+    Configuration for registering the service with AWS Cloud Map for DNS-based service discovery.
+    This enables traditional DNS queries (A/SRV records) within the VPC, allowing non-ECS clients
+    (such as EC2 instances, Lambda functions) to discover service endpoints.
+    Can be used alongside service_connect_configuration for hybrid discovery scenarios.
+
+    - registry_arn: ARN of the AWS Cloud Map service registry
+    - container_name: (Optional) Container name for SRV records
+    - container_port: (Optional) Container port for SRV records
+  EOT
   default     = null
 }
 
@@ -321,6 +361,7 @@ variable "add_xray_container" {
   description = "Whether to add the xray daemon container to the task definition"
   default     = true
 }
+
 variable "xray_container_image" {
   type        = string
   description = "The xray daemon container image"
