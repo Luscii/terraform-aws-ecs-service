@@ -89,6 +89,16 @@ resource "aws_ecs_service" "this" {
     }
   }
 
+  dynamic "service_registries" {
+    for_each = local.all_service_registries
+
+    content {
+      registry_arn   = service_registries.value.registry_arn
+      container_name = service_registries.value.container_name
+      container_port = service_registries.value.container_port
+    }
+  }
+
   tags = module.label.tags
 
   depends_on = [aws_iam_role_policy_attachment.execution_ecs_task]

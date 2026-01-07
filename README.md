@@ -18,6 +18,127 @@ module "sc_service" {
 }
 ```
 
+### With Service Connect and DNS-based Service Discovery
+
+This example demonstrates how to configure both Service Connect (for ECS-to-ECS communication) and traditional DNS-based service discovery (for non-ECS clients like EC2 instances or Lambda functions).
+
+```terraform
+# Create a private DNS namespace for service discovery
+resource "aws_service_discovery_private_dns_namespace" "main" {
+  name = "internal.example.com"
+  vpc  = var.vpc_id
+}
+
+# ECS service with both Service Connect and DNS discovery
+module "api_service" {
+  source = "path/to/module"
+
+  name             = "api"
+  ecs_cluster_name = "my-cluster"
+  vpc_id           = var.vpc_id
+  subnets          = var.private_subnet_ids
+
+  task_cpu    = 256
+  task_memory = 512
+
+  execution_role = {
+    name = aws_iam_role.execution.name
+    arn  = aws_iam_role.execution.arn
+  }
+
+  task_role = {
+    name = aws_iam_role.task.name
+    arn  = aws_iam_role.task.arn
+  }
+
+  container_definitions = [
+    {
+      name  = "app"
+      image = "my-app:latest"
+
+      port_mappings = [
+        {
+          containerPort = 8080
+          protocol      = "tcp"
+          name          = "http"
+        }
+      ]
+
+      log_configuration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = "/ecs/my-app"
+          "awslogs-region"        = "eu-west-1"
+          "awslogs-stream-prefix" = "app"
+        }
+      }
+    }
+  ]
+
+  # Service Connect for ECS-to-ECS communication
+  service_connect_configuration = {
+    namespace      = "service-connect-namespace"
+    discovery_name = "api"
+    port_name      = "http"
+    client_alias = {
+      dns_name = "api"
+      port     = 8080
+    }
+  }
+
+  # Automatic DNS discovery for non-ECS clients (e.g., bastion EC2 instances)
+  # This creates Cloud Map services automatically based on service_connect_configuration
+  service_discovery_dns_namespace_ids = [
+    aws_service_discovery_private_dns_namespace.main.id
+  ]
+}
+```
+
+**How it works:**
+- **ECS services** with Service Connect can reach the API via `api:8080` (using the service mesh)
+- **Non-ECS clients** (like bastion EC2 instances) can reach the API via `api.internal.example.com:8080` (using traditional DNS A records)
+- The module automatically creates the Cloud Map service using the `client_alias.dns_name` as the service name
+- Container name and port are automatically mapped from the `service_connect_configuration.port_name`
+
+### Advanced: Manual Service Registry Configuration
+
+For more control over the service registry configuration, you can manually configure `service_registries`:
+
+```terraform
+# Manually create Cloud Map service
+resource "aws_service_discovery_service" "api" {
+  name = "custom-api-name"
+
+  dns_config {
+    namespace_id = aws_service_discovery_private_dns_namespace.main.id
+
+    dns_records {
+      ttl  = 60
+      type = "A"
+    }
+
+    routing_policy = "WEIGHTED"
+  }
+
+  health_check_custom_config {}
+}
+
+module "api_service" {
+  source = "path/to/module"
+
+  # ... other configuration ...
+
+  # Manual service registry configuration
+  service_registries = {
+    registry_arn   = aws_service_discovery_service.api.arn
+    container_name = "app"
+    container_port = 8080
+  }
+}
+```
+
+**Note:** You can use both `service_discovery_dns_namespace_ids` (automated) and `service_registries` (manual) simultaneously. The module will combine them automatically.
+
 ## Configuration
 <!-- BEGIN_TF_DOCS -->
 ### Requirements

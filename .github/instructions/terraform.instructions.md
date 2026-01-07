@@ -14,6 +14,8 @@ applyTo: "**/*.tf"
 - Validate inputs with validation blocks
 - Split large files by function (network.tf, security.tf, etc.)
 - Use `this` for primary resources
+- Use the function `one()` for single-element lists, (don't use `[0]`)
+- use the function `try()` for potentially null references
 - Run: `terraform fmt`, `terraform validate`, security scans
 
 **Cross-references:**
