@@ -50,6 +50,11 @@ variable "name" {
   description = "Name of the ECS service"
 }
 
+variable "app_version" {
+  type        = string
+  description = "Application version to be added as a tag to the task definition"
+  default     = null
+}
 
 variable "task_cpu" {
   type        = number
