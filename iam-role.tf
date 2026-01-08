@@ -48,11 +48,27 @@ data "aws_iam_policy_document" "execution_pull_cache" {
     resources = [for arn in values(local.pull_cache_rule_arns) : "${arn}/*"]
   }
 
-  statement {
-    sid       = "ECRPullThroughCacheCredentials"
-    effect    = "Allow"
-    actions   = ["secretsmanager:GetSecretValue"]
-    resources = concat(local.pull_cache_credential_arns)
+  dynamic "statement" {
+    for_each = length(local.pull_cache_credential_arns) > 0 ? [1] : []
+
+    content {
+      sid       = "ECRPullThroughCacheCredentials"
+      effect    = "Allow"
+      actions   = ["secretsmanager:GetSecretValue"]
+      resources = local.pull_cache_credential_arns
+    }
+
+  }
+  dynamic "statement" {
+    for_each = length(local.pull_cache_kms_key_arns) > 0 ? [1] : []
+
+    content {
+      sid       = "ECRPullThroughCacheKMSEncrypt"
+      effect    = "Allow"
+      actions   = ["kms:Encrypt", "kms:GenerateDataKey"]
+      resources = local.pull_cache_kms_key_arns
+    }
+
   }
 }
 
