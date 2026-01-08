@@ -53,6 +53,26 @@ output "service_execution_role_arn" {
   description = "The ARN of the service execution role"
 }
 
+output "service_task_role_name" {
+  value       = try(aws_iam_role.task[0].name, var.task_role.name)
+  description = "The Name (equal to ID) of the service task role"
+}
+
+output "service_execution_role_name" {
+  value       = try(aws_iam_role.execution[0].name, var.execution_role.name)
+  description = "The Name (equal to ID) of the service execution role"
+}
+
+output "service_task_role_id" {
+  value       = try(aws_iam_role.task[0].id, var.task_role.name)
+  description = "The ID (equal to Name) of the service task role"
+}
+
+output "service_execution_role_id" {
+  value       = try(aws_iam_role.execution[0].id, var.execution_role.name)
+  description = "The ID (equal to Name) of the service execution role"
+}
+
 output "scaling_target" {
   value       = local.scaling_enabled ? aws_appautoscaling_target.this[0] : null
   description = "The autoscaling target resource - https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/appautoscaling_target"
