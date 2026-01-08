@@ -27,4 +27,16 @@ data "aws_secretsmanager_secret" "pull_through_cache_credentials" {
 
 locals {
   pull_cache_credential_arns = distinct([for secret in data.aws_secretsmanager_secret.pull_through_cache_credentials : secret.arn])
+  pull_cache_kms_key_ids = distinct(compact([for secret in data.aws_secretsmanager_secret.pull_through_cache_credentials :
+    secret.kms_key_id
+  ]))
+  pull_cache_kms_key_arns = distinct(compact([for secret in data.aws_kms_key.pull_through_cache_keys :
+    secret.arn
+  ]))
+}
+
+data "aws_kms_key" "pull_through_cache_keys" {
+  for_each = toset(local.pull_cache_kms_key_ids)
+
+  key_id = each.value
 }
