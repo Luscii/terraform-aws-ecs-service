@@ -39,9 +39,5 @@ resource "aws_service_discovery_service" "this" {
     routing_policy = "MULTIVALUE"
   }
 
-  health_check_custom_config {
-    # Note: failure_threshold is deprecated and always set to 1 by AWS
-  }
-
   tags = module.label.tags
 }
