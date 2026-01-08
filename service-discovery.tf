@@ -12,20 +12,12 @@ locals {
     ])
   ) : null
 
-  # Find the port number for the service connect port
-  service_connect_port = local.create_service_discovery ? (
-    one([for port in local.container_port_mappings[local.service_connect_container] :
-      port.containerPort if port.name == var.service_connect_configuration.port_name
-    ])
-  ) : null
-
   # Combine automated and manual service registries
   all_service_registries = concat(
     var.service_registries != null ? [var.service_registries] : [],
     [for service in aws_service_discovery_service.this : {
       registry_arn   = service.arn
       container_name = local.service_connect_container
-      container_port = local.service_connect_port
     }]
   )
 }

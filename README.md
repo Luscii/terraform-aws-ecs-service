@@ -152,7 +152,7 @@ module "api_service" {
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | 6.14.1 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | 6.27.0 |
 
 ### Modules
 
@@ -181,12 +181,14 @@ module "api_service" {
 | [aws_iam_role_policy_attachment.execution_ecs_task](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.task_xray_daemon](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_security_group.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group) | resource |
+| [aws_service_discovery_service.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/service_discovery_service) | resource |
 | [aws_caller_identity.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |
 | [aws_ecr_pull_through_cache_rule.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/ecr_pull_through_cache_rule) | data source |
 | [aws_ecs_cluster.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/ecs_cluster) | data source |
 | [aws_iam_policy_document.assume_role](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_iam_policy_document.execution_pull_cache](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_iam_policy_document.task_ecs_exec](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
+| [aws_kms_key.pull_through_cache_keys](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/kms_key) | data source |
 | [aws_region.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/region) | data source |
 | [aws_secretsmanager_secret.pull_through_cache_credentials](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/secretsmanager_secret) | data source |
 
@@ -215,6 +217,8 @@ module "api_service" {
 | <a name="input_scaling_target"></a> [scaling\_target](#input\_scaling\_target) | Target tracking scaling policies for the service. Enables Target tracking scaling. Predefined metric type must be one of ECSServiceAverageCPUUtilization, ALBRequestCountPerTarget or ECSServiceAverageMemoryUtilization - https://docs.aws.amazon.com/autoscaling/application/APIReference/API_PredefinedMetricSpecification.html | <pre>map(object({<br/>    predefined_metric_type = string<br/>    resource_label         = optional(string)<br/>    target_value           = number<br/>    scale_in_cooldown      = optional(number, 300)<br/>    scale_out_cooldown     = optional(number, 300)<br/>  }))</pre> | `null` | no |
 | <a name="input_security_group_ids"></a> [security\_group\_ids](#input\_security\_group\_ids) | List of additional security groups to attach to the service | `list(string)` | `[]` | no |
 | <a name="input_service_connect_configuration"></a> [service\_connect\_configuration](#input\_service\_connect\_configuration) | Service discovery configuration for the service | <pre>object({<br/>    namespace      = optional(string)<br/>    discovery_name = optional(string)<br/>    port_name      = optional(string)<br/>    client_alias = optional(object({<br/>      dns_name = string<br/>      port     = number<br/>    }))<br/>    cloudwatch = optional(object({<br/>      log_group = string<br/>      region    = string<br/>    }))<br/>  })</pre> | `null` | no |
+| <a name="input_service_discovery_dns_namespace_ids"></a> [service\_discovery\_dns\_namespace\_ids](#input\_service\_discovery\_dns\_namespace\_ids) | List of AWS Cloud Map private DNS namespace IDs for automatic service discovery registration.<br/>When provided, the module automatically creates Cloud Map services in these namespaces, enabling<br/>DNS-based service discovery for non-ECS clients (EC2 instances, Lambda, etc.).<br/><br/>The service name is derived from service\_connect\_configuration.client\_alias.dns\_name.<br/>The container name and port are automatically mapped from service\_connect\_configuration.<br/><br/>This provides an automated alternative to manually configuring service\_registries.<br/>Both approaches can be used simultaneously for different discovery scenarios.<br/><br/>Example: ["ns-1234567890abcdef", "ns-0987654321fedcba"] | `list(string)` | `[]` | no |
+| <a name="input_service_registries"></a> [service\_registries](#input\_service\_registries) | Configuration for registering the service with AWS Cloud Map for DNS-based service discovery.<br/>This enables traditional DNS queries (A/SRV records) within the VPC, allowing non-ECS clients<br/>(such as EC2 instances, Lambda functions) to discover service endpoints.<br/>Can be used alongside service\_connect\_configuration for hybrid discovery scenarios.<br/><br/>- registry\_arn: ARN of the AWS Cloud Map service registry<br/>- container\_name: (Optional) Container name for SRV records<br/>- container\_port: (Optional) Container port for SRV records | <pre>object({<br/>    registry_arn   = string<br/>    container_name = optional(string)<br/>    container_port = optional(number)<br/>  })</pre> | `null` | no |
 | <a name="input_subnets"></a> [subnets](#input\_subnets) | List of Subnet ids in which the Service runs | `list(string)` | n/a | yes |
 | <a name="input_task_cpu"></a> [task\_cpu](#input\_task\_cpu) | value in cpu units for the task | `number` | n/a | yes |
 | <a name="input_task_memory"></a> [task\_memory](#input\_task\_memory) | value in MiB for the task | `number` | n/a | yes |
