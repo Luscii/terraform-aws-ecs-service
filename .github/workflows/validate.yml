@@ -27,7 +27,7 @@ jobs:
         with:
           fetch-depth: 1
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+        uses: hashicorp/setup-terraform@v4
       - name: Terraform format
         id: tf-fmt
         run: terraform -chdir=${{inputs.terraform_directory}} fmt -check
