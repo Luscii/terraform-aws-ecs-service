@@ -127,7 +127,7 @@ Both `service_discovery_dns_namespace_ids` and `service_registries` can be used 
 
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
-| `high_traffic_service` | `bool` | `false` | >500 req/s: allocates 512 CPU + 128 MiB for Envoy (instead of 256 + 64) |
+| `high_traffic_service` | `bool` | `false` | >500 req/s: allocates 512 CPU + 128 MiB for Envoy (instead of 256 + 64). Rarely needed — only enable when a service exceeds ~500 req/s (AWS guidance for Envoy proxy resource limits) |
 
 ## Security Groups
 
