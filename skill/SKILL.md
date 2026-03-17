@@ -1,5 +1,5 @@
 ---
-name: using-luscii-ecs-service
+name: luscii-ecs-service
 description: 'Integrates the Luscii terraform-aws-ecs-service module into Terraform configurations to deploy AWS ECS Fargate services. Use when asked to "create ECS service", "deploy Fargate service", "add ECS module", "configure service connect", "set up auto-scaling for ECS", "add container definitions", or working with Luscii ECS infrastructure as code.'
 ---
 
@@ -98,6 +98,8 @@ module "my_service" {
 }
 ```
 
+**Sizing approach:** Start with an educated guess on the minimum requirements for your workload, then rely on monitoring and auto-scaling to adjust. There are no fixed rules — right-size iteratively based on actual usage. Remember to account for sidecars (X-Ray: 128 CPU + 256 MiB; Envoy if using Service Connect: 256 CPU + 64 MiB).
+
 For valid CPU/memory combinations, see [references/inputs.md](references/inputs.md#valid-cpumemory-combinations).
 
 ### Step 2: Configure Containers
@@ -105,14 +107,23 @@ For valid CPU/memory combinations, see [references/inputs.md](references/inputs.
 Define at least one container. Full schema at [references/container-definitions.md](references/container-definitions.md).
 
 Key points:
-- An **X-Ray sidecar** is added by default (128 CPU, 256 MiB). Set `add_xray_container = false` to disable.
+- An **X-Ray sidecar** is added by default (128 CPU, 256 MiB). Keep it enabled for all core Vitals workload services — it's the current tracing standard. Only set `add_xray_container = false` for supportive/non-core services where tracing isn't critical.
 - `task_cpu`/`task_memory` must fit all containers + Envoy sidecar (if Service Connect is used: +256 CPU / +64 MiB, or +512 CPU / +128 MiB for `high_traffic_service = true`).
 - **Port names** matter: `port_mappings[].name` is referenced by `service_connect_configuration.port_name` and validated at plan time.
-- The module auto-creates task and execution IAM roles unless you provide `task_role` and `execution_role`.
+- The module **auto-creates task and execution IAM roles** — this is the preferred approach. Per-service roles enable least-privilege and the module sets up core policies automatically. The `task_role`/`execution_role` inputs exist for backwards compatibility but should rarely be used.
 
 ### Step 3: Choose Connectivity Pattern
 
-Pick one (or combine):
+Use this decision flow to pick the right pattern:
+
+1. **Does the service need external/internet access?** → Use **B (Load Balancer)**. Can be combined with A or C if the service also needs internal ECS-to-ECS communication.
+2. **ECS-to-ECS only?** → Use **A (Service Connect)**. The default for internal microservice communication.
+3. **ECS-to-ECS + reachable from within the VPC** (e.g., via bastion/SSM, Lambda, EC2)? → Use **C (Hybrid)**. This is a convenience that auto-creates Cloud Map DNS from the Service Connect config, so the service is discoverable both via Service Connect and via DNS.
+4. **Need DNS discoverability without Service Connect**, or need to register into a manually managed Cloud Map service? → Use **D (Manual service registry)**.
+
+Options can be combined: B+A for external + internal ECS-to-ECS, B+C for external + full VPC discoverability. C is essentially the simplified combination of A+D.
+
+**Luscii convention:** This module supports both public and internal ALB/NLB target groups, but we typically use load balancers for external access. For internal access, prefer Service Connect and Cloud Map (DNS).
 
 **A) Service Connect only** (ECS-to-ECS via service mesh):
 ```terraform
@@ -126,7 +137,7 @@ Pick one (or combine):
   }
 ```
 
-**B) Load Balancer** (public or internal ALB/NLB):
+**B) Load Balancer** (public or internal access via ALB/NLB target groups):
 ```terraform
   load_balancers = [{
     target_group_arn = aws_lb_target_group.app.arn
@@ -135,7 +146,7 @@ Pick one (or combine):
   }]
 ```
 
-**C) Hybrid** (Service Connect + DNS for non-ECS clients):
+**C) Hybrid** (Service Connect + DNS for VPC-wide discoverability):
 ```terraform
   service_connect_configuration = { /* ... */ }
   service_discovery_dns_namespace_ids = [
@@ -181,6 +192,12 @@ The module creates a security group with self-referencing ingress. Add rules:
 ### Step 5: Set Up Scaling (If Needed)
 
 First enable scaling, then add policies. See [references/scaling.md](references/scaling.md).
+
+**Which scaling strategy?** Choose based on traffic pattern:
+
+- **Unpredictable traffic** → Target tracking only (CPU or ALB request count). The service scales reactively based on actual load.
+- **Predictable traffic** → Scheduled scaling + target tracking. Pre-scale before expected load, with target tracking as a safety net. Luscii's Vitals workload follows a predictable pattern: peak on Monday mornings (nurses processing weekend measurements/alarms), tapering through the week, quiet on weekends.
+- **Mixed** → Combine both. Scheduled scaling sets the baseline; target tracking handles spikes.
 
 ```terraform
   scaling = { min_capacity = 2, max_capacity = 10 }
