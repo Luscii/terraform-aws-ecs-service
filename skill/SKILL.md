@@ -123,7 +123,7 @@ Use this decision flow to pick the right pattern:
 
 Options can be combined: B+A for external + internal ECS-to-ECS, B+C for external + full VPC discoverability. C is essentially the simplified combination of A+D.
 
-**Luscii convention:** Load Balancers are for external access. For internal access, prefer Service Connect and Cloud Map (DNS).
+**Luscii convention:** This module supports both public and internal ALB/NLB target groups, but we typically use load balancers for external access. For internal access, prefer Service Connect and Cloud Map (DNS).
 
 **A) Service Connect only** (ECS-to-ECS via service mesh):
 ```terraform
@@ -137,7 +137,7 @@ Options can be combined: B+A for external + internal ECS-to-ECS, B+C for externa
   }
 ```
 
-**B) Load Balancer** (external access via ALB/NLB):
+**B) Load Balancer** (public or internal access via ALB/NLB target groups):
 ```terraform
   load_balancers = [{
     target_group_arn = aws_lb_target_group.app.arn
