@@ -241,9 +241,13 @@ module "api_service" {
 | <a name="output_service_discovery_internal_url"></a> [service\_discovery\_internal\_url](#output\_service\_discovery\_internal\_url) | Base URL for the service internally |
 | <a name="output_service_discovery_name"></a> [service\_discovery\_name](#output\_service\_discovery\_name) | The service discovery name for the service |
 | <a name="output_service_execution_role_arn"></a> [service\_execution\_role\_arn](#output\_service\_execution\_role\_arn) | The ARN of the service execution role |
+| <a name="output_service_execution_role_id"></a> [service\_execution\_role\_id](#output\_service\_execution\_role\_id) | The ID (equal to Name) of the service execution role |
+| <a name="output_service_execution_role_name"></a> [service\_execution\_role\_name](#output\_service\_execution\_role\_name) | The Name (equal to ID) of the service execution role |
 | <a name="output_service_id"></a> [service\_id](#output\_service\_id) | The ID of the service |
 | <a name="output_service_name"></a> [service\_name](#output\_service\_name) | The name of the service |
 | <a name="output_service_task_role_arn"></a> [service\_task\_role\_arn](#output\_service\_task\_role\_arn) | The ARN of the service task role |
+| <a name="output_service_task_role_id"></a> [service\_task\_role\_id](#output\_service\_task\_role\_id) | The ID (equal to Name) of the service task role |
+| <a name="output_service_task_role_name"></a> [service\_task\_role\_name](#output\_service\_task\_role\_name) | The Name (equal to ID) of the service task role |
 | <a name="output_task_definition_arn"></a> [task\_definition\_arn](#output\_task\_definition\_arn) | The ARN of the task definition |
 | <a name="output_task_definition_family"></a> [task\_definition\_family](#output\_task\_definition\_family) | The family of the task definition |
 | <a name="output_task_definition_id"></a> [task\_definition\_id](#output\_task\_definition\_id) | The ID of the task definition |

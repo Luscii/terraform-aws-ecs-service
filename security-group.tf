@@ -46,4 +46,6 @@ resource "aws_security_group" "this" {
       self             = egress.value.self
     }
   }
+
+  tags = module.label.tags
 }
