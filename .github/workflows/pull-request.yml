@@ -15,7 +15,7 @@ jobs:
     if: github.event_name == 'pull_request'
     steps:
       - name: PR Labeling
-        uses: srvaroa/labeler@v1.13.0
+        uses: srvaroa/labeler@v1.14.0
         continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.CI_GITHUB_TOKEN }}

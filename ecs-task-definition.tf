@@ -7,6 +7,11 @@ locals {
 
   required_cpu    = sum([for definition in module.container_definitions : contains(keys(definition.json_map_object), "cpu") ? definition.json_map_object.cpu : 0]) + local.required_envoy_cpu
   required_memory = sum([for definition in module.container_definitions : contains(keys(definition.json_map_object), "memory") ? definition.json_map_object.memory : 0]) + local.required_envoy_mem
+
+  task_definition_tags = merge(
+    module.label.tags,
+    var.app_version != null ? { "AppVersion" = var.app_version } : {}
+  )
 }
 
 resource "aws_ecs_task_definition" "this" {
@@ -16,13 +21,13 @@ resource "aws_ecs_task_definition" "this" {
   cpu    = var.task_cpu
   memory = var.task_memory
 
-  task_role_arn      = var.task_role.arn
-  execution_role_arn = var.execution_role.arn
+  task_role_arn      = try(aws_iam_role.task[0].arn, var.task_role.arn)
+  execution_role_arn = try(aws_iam_role.execution[0].arn, var.execution_role.arn)
 
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
 
-  tags = module.label.tags
+  tags = local.task_definition_tags
 
   lifecycle {
     precondition {
