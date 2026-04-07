@@ -13,6 +13,8 @@ Integrates `terraform-aws-ecs-service` into Terraform configurations to deploy A
 - Adding a containerized workload to an existing ECS cluster
 - Configuring Service Connect, DNS discovery, or load balancer integration
 - Setting up auto-scaling for an ECS service
+- Creating scheduled ECS tasks (with `task_schedule`)
+- Creating task definitions only (with `task_only = true`) for manual task execution or external orchestration
 - Referencing ECS service outputs (roles, security groups, discovery URLs)
 
 ## Quick Start
@@ -70,6 +72,7 @@ Copy and track:
 
 ```
 Progress:
+- [ ] Step 0: Choose deployment mode (service / task-only / scheduled task)
 - [ ] Step 1: Define service basics (name, cluster, networking)
 - [ ] Step 2: Configure containers
 - [ ] Step 3: Choose connectivity pattern
@@ -77,6 +80,52 @@ Progress:
 - [ ] Step 5: Set up scaling (if needed)
 - [ ] Step 6: Wire up outputs
 - [ ] Step 7: Validate configuration
+```
+
+### Step 0: Choose Deployment Mode
+
+**Decision flow:**
+
+1. **Scheduled task** (runs on a schedule, no continuous service)
+   - Set `task_schedule` with cron expression
+   - Module creates EventBridge rules and IAM roles
+   - Service is still created by default; use `task_only = true` to skip it
+
+2. **Task-only** (task definition for manual execution or external orchestration)
+   - Set `task_only = true`
+   - Module creates task definition, IAM roles, and security group only
+   - No ECS service created
+   - Service outputs (service_id, service_arn, service_name) will be `null`
+   - Use for: db migrations, one-off jobs, tasks triggered by Step Functions, etc.
+
+3. **Continuous service** (default)
+   - Don't set `task_only` or `task_schedule`
+   - Module creates a running ECS service with desired task count
+   - Use for: APIs, web servers, workers, any long-running process
+
+**Examples:**
+
+```terraform
+# Scheduled task (daily at 2 AM)
+module "daily_report" {
+  # ...
+  task_schedule = {
+    schedule    = "cron(0 2 * * ? *)"
+    description = "Daily report generation"
+    task_count  = 1
+  }
+}
+
+# Task-only (manual execution)
+module "migration_task" {
+  # ...
+  task_only = true
+}
+
+# Continuous service (default - no special flags)
+module "api_service" {
+  # ...
+}
 ```
 
 ### Step 1: Define Service Basics
@@ -275,6 +324,8 @@ Common validation errors:
 4. **Self-referencing security group** — all containers in the service can communicate
 5. **Auto-created IAM roles** — unless `task_role`/`execution_role` provided; policies attached either way
 6. **ECR pull-through cache auto-detected** — set `pull_cache_prefix` on containers to use
+7. **task_only mode** — when `task_only = true`, only task definition, IAM roles, and security group are created; service outputs are `null`
+8. **Scheduled tasks** — when `task_schedule` is set, EventBridge rules and IAM roles for scheduled execution are created automatically
 
 ## Requirements
 

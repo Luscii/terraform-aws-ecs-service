@@ -395,13 +395,45 @@ resource "aws_secretsmanager_secret" "secrets" {
   for_each = toset(local.secrets_to_actually_create)
   # ...
 }
+
+resource "aws_ecs_service" "this" {
+  count = var.task_only ? 0 : 1
+  # Creates service only when not in task-only mode
+  # ...
+}
+
+resource "aws_cloudwatch_event_rule" "this" {
+  count = var.task_schedule == null ? 0 : 1
+  # Creates scheduled event only when task_schedule is configured
+  # ...
+}
 ```
 
 ### Resource Dependencies
-Reference resources appropriately:
-- Access attributes directly: `aws_ecs_service.this.name`
-- Use conditional references: `try(aws_ecs_service.this.service_connect_configuration[0].service[0].discovery_name, null)`
-- For count-based resources: `aws_appautoscaling_target.this[0].resource_id`
+Reference resources appropriately based on their conditionality:
+
+**Direct References (Always Present):**
+```terraform
+# For resources without count/for_each
+aws_ecs_task_definition.this.name
+aws_security_group.this.id
+```
+
+**Conditional References (Resources with count):**
+```terraform
+# Prefer one() for single-element lists from count-based resources
+aws_ecs_service.this[0].name           # ❌ Avoid - fails when count = 0
+one(aws_ecs_service.this[*].name)      # ✅ Better - returns value or null
+try(aws_ecs_service.this[0].name, null) # ✅ Also acceptable
+
+# For nested references or complex paths, use try()
+try(aws_ecs_service.this[0].service_connect_configuration[0].service[0].discovery_name, null)
+```
+
+**Examples from this Module:**
+- Service references: `one(aws_ecs_service.this[*])` or `try(aws_ecs_service.this[0], null)` (when `task_only = true`, service doesn't exist)
+- Event rule references: `one(aws_cloudwatch_event_rule.this[*])` (when `task_schedule = null`, rule doesn't exist)
+- Scaling references: `one(aws_appautoscaling_target.this[*])` (when scaling is disabled)
 
 ## Outputs
 
@@ -634,10 +666,32 @@ variable "name" {}
 - Keep comments concise and relevant
 
 ### Null Safety
-- Use `optional()` with default values
-- Use `try()` for potentially null references
-- Use `one()` for single-element lists from optional resources
-- Use `lookup()` with defaults for map access
+
+**Choosing the Right Function:**
+
+| Scenario | Function | Example |
+|----------|----------|---------|
+| Optional object attributes | `optional()` | `optional(string, "default")` |
+| Count-based resources (single item) | `one()` | `one(aws_ecs_service.this[*].id)` |
+| Nested/complex optional paths | `try()` | `try(resource.this[0].nested[0].value, null)` |
+| Map key access | `lookup()` | `lookup(var.map, "key", "default")` |
+| Safe object key checking | `contains(keys(...), "key")` | See below |
+
+**Guidelines:**
+- **Use `one()`** for count-based resources that create 0 or 1 instances:
+  - Returns the single value when count = 1
+  - Returns `null` when count = 0
+  - Cleaner than `try(resource[0], null)` for simple cases
+  - Example: `one(aws_ecs_service.this[*])`, `one(aws_cloudwatch_event_rule.this[*])`
+
+- **Use `try()`** for deeply nested paths or when combining multiple fallbacks:
+  - Handles multiple potential failure points
+  - Allows custom fallback values
+  - Example: `try(aws_ecs_service.this[0].service_connect_configuration[0].service[0].discovery_name, null)`
+
+- **Never use `[0]` directly** on count-based resources without try() or one()
+  - Will fail with "index out of bounds" when count = 0
+  - Always use `one(resource[*])` or `try(resource[0], default)`
 
 ### Type Checking
 Use `contains(keys(...), "key")` to check for object keys safely:

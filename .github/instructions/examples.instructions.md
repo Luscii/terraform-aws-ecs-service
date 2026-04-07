@@ -208,6 +208,84 @@ module "internal_service" {
 ```
 ```
 
+```markdown
+### Scheduled Task
+
+```terraform
+module "scheduled_task" {
+  source = "github.com/Luscii/terraform-aws-ecs-service"
+
+  name             = "nightly-report"
+  ecs_cluster_name = "production"
+  vpc_id           = "vpc-12345678"
+  subnets          = ["subnet-12345678", "subnet-87654321"]
+
+  task_cpu    = 512
+  task_memory = 1024
+
+  container_definitions = [{
+    name  = "report-generator"
+    image = "myregistry.io/report-generator:latest"
+  }]
+
+  # Schedule task to run every day at 2 AM UTC
+  task_schedule = {
+    schedule    = "cron(0 2 * * ? *)"
+    description = "Daily report generation"
+    task_count  = 1
+    enabled     = true
+  }
+
+  context = module.label.context
+}
+```
+
+**Note:** When `task_schedule` is set, the module creates EventBridge rules and IAM roles for scheduled execution. The ECS service is still created by default; use `task_only = true` to skip service creation.
+```
+
+```markdown
+### Task Definition Only (No Service)
+
+```terraform
+module "task_only" {
+  source = "github.com/Luscii/terraform-aws-ecs-service"
+
+  name             = "migration-task"
+  ecs_cluster_name = "production"
+  vpc_id           = "vpc-12345678"
+  subnets          = ["subnet-12345678", "subnet-87654321"]
+
+  task_cpu    = 1024
+  task_memory = 2048
+
+  # Skip service creation - task definition only
+  task_only = true
+
+  container_definitions = [{
+    name  = "db-migration"
+    image = "myregistry.io/db-migration:latest"
+  }]
+
+  context = module.label.context
+}
+
+# Run task manually or via external orchestration
+resource "null_resource" "run_migration" {
+  provisioner "local-exec" {
+    command = <<-EOT
+      aws ecs run-task \
+        --cluster ${module.task_only.cluster_name} \
+        --task-definition ${module.task_only.task_definition_family} \
+        --launch-type FARGATE \
+        --network-configuration "awsvpcConfiguration={subnets=[subnet-12345678],securityGroups=[${module.task_only.security_group_id}]}"
+    EOT
+  }
+}
+```
+
+**Note:** When `task_only = true`, the module creates the task definition, IAM roles, and security group but skips the ECS service. Service outputs (service_id, service_arn, service_name) will be `null`. Use this mode for tasks run manually via `aws ecs run-task` or external orchestration systems.
+```
+
 ## Examples Directory Structure
 
 **When to Create an Examples Directory:**
@@ -248,7 +326,8 @@ Create separate directories for common use cases:
 **For ECS Service Module:**
 - `with-load-balancer/` - Service behind an ALB
 - `service-connect-only/` - Internal service using Service Connect
-- `scheduled-task/` - Scheduled ECS task
+- `scheduled-task/` - Scheduled ECS task using `task_schedule` (without service)
+- `task-only/` - Task definition only using `task_only = true` (for manual task runs or external orchestration)
 - `with-autoscaling/` - Service with auto-scaling enabled
 
 **For Load Balancer Module:**

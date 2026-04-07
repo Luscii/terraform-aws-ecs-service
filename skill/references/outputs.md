@@ -27,11 +27,13 @@ All outputs from the `terraform-aws-ecs-service` module, with types, value expre
 
 ### Service
 
+**Note:** When `task_only = true`, these outputs are `null` since no service is created.
+
 | Output | Type | Value Expression | Description |
 |--------|------|-----------------|-------------|
-| `service_id` | `string` | `aws_ecs_service.this.id` | ID of the service |
-| `service_name` | `string` | `aws_ecs_service.this.name` | Name of the service |
-| `service_arn` | `string` | `aws_ecs_service.this.id` | ARN of the service (value is the resource ID) |
+| `service_id` | `string` or `null` | `try(aws_ecs_service.this[0].id, null)` | ID of the service. `null` when `task_only = true` |
+| `service_name` | `string` or `null` | `try(aws_ecs_service.this[0].name, null)` | Name of the service. `null` when `task_only = true` |
+| `service_arn` | `string` or `null` | `try(aws_ecs_service.this[0].arn, null)` | ARN of the service. `null` when `task_only = true` |
 
 ### IAM Roles
 
@@ -55,10 +57,12 @@ These return the module-created role or the user-provided role, whichever applie
 
 ### Service Discovery
 
+**Note:** When `task_only = true` or Service Connect is not configured, these outputs are `null`.
+
 | Output | Type | Value Expression | Description |
 |--------|------|-----------------|-------------|
-| `service_discovery_name` | `string` or `null` | `try(aws_ecs_service.this.service_connect_configuration[0].service[0].discovery_name, null)` | Discovery name. `null` if no Service Connect |
-| `service_discovery_internal_url` | `string` or `null` | `try("http://${...dns_name}:${...port}", null)` | Internal URL like `http://api:8080`. `null` if no Service Connect |
+| `service_discovery_name` | `string` or `null` | `try(aws_ecs_service.this[0].service_connect_configuration[0].service[0].discovery_name, null)` | Discovery name. `null` if no Service Connect or `task_only = true` |
+| `service_discovery_internal_url` | `string` or `null` | `try("http://${...dns_name}:${...port}", null)` | Internal URL like `http://api:8080`. `null` if no Service Connect or `task_only = true` |
 
 ## Complex Outputs
 
