@@ -29,17 +29,17 @@ output "task_definition_family" {
 }
 
 output "service_id" {
-  value       = aws_ecs_service.this.id
+  value       = try(aws_ecs_service.this[0].id, null)
   description = "The ID of the service"
 }
 
 output "service_name" {
-  value       = aws_ecs_service.this.name
+  value       = try(aws_ecs_service.this[0].name, null)
   description = "The name of the service"
 }
 
 output "service_arn" {
-  value       = aws_ecs_service.this.id
+  value       = try(aws_ecs_service.this[0].arn, null)
   description = "The ARN of the service"
 }
 
@@ -79,17 +79,17 @@ output "scaling_target" {
 }
 
 output "service_discovery_name" {
-  value       = try(aws_ecs_service.this.service_connect_configuration[0].service[0].discovery_name, null)
+  value       = try(aws_ecs_service.this[0].service_connect_configuration[0].service[0].discovery_name, null)
   description = "The service discovery name for the service"
 }
 
 output "service_discovery_client_aliases" {
-  value       = try(aws_ecs_service.this.service_connect_configuration[0].service[*].client_alias, null)
+  value       = try(aws_ecs_service.this[0].service_connect_configuration[0].service[*].client_alias, null)
   description = "The service discovery client aliases for the service"
 }
 
 output "service_discovery_internal_url" {
-  value       = try("http://${aws_ecs_service.this.service_connect_configuration[0].service[0].client_alias[0].dns_name}:${aws_ecs_service.this.service_connect_configuration[0].service[0].client_alias[0].port}", null)
+  value       = try("http://${aws_ecs_service.this[0].service_connect_configuration[0].service[0].client_alias[0].dns_name}:${aws_ecs_service.this[0].service_connect_configuration[0].service[0].client_alias[0].port}", null)
   description = "Base URL for the service internally"
 }
 

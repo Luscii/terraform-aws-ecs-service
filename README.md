@@ -152,7 +152,7 @@ module "api_service" {
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | 6.27.0 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | 6.36.0 |
 
 ### Modules
 
@@ -171,10 +171,14 @@ module "api_service" {
 | [aws_appautoscaling_policy.target](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/appautoscaling_policy) | resource |
 | [aws_appautoscaling_scheduled_action.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/appautoscaling_scheduled_action) | resource |
 | [aws_appautoscaling_target.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/appautoscaling_target) | resource |
+| [aws_cloudwatch_event_rule.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_event_rule) | resource |
+| [aws_cloudwatch_event_target.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_event_target) | resource |
 | [aws_ecs_service.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ecs_service) | resource |
 | [aws_ecs_task_definition.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ecs_task_definition) | resource |
+| [aws_iam_role.event](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
 | [aws_iam_role.execution](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
 | [aws_iam_role.task](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
+| [aws_iam_role_policy.event](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
 | [aws_iam_role_policy.execution_pull_cache](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
 | [aws_iam_role_policy.task_ecs_exec](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
 | [aws_iam_role_policy_attachment.execution_ecr_public](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
@@ -186,6 +190,7 @@ module "api_service" {
 | [aws_ecr_pull_through_cache_rule.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/ecr_pull_through_cache_rule) | data source |
 | [aws_ecs_cluster.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/ecs_cluster) | data source |
 | [aws_iam_policy_document.assume_role](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
+| [aws_iam_policy_document.event_role](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_iam_policy_document.execution_pull_cache](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_iam_policy_document.task_ecs_exec](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_kms_key.pull_through_cache_keys](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/kms_key) | data source |
@@ -222,7 +227,9 @@ module "api_service" {
 | <a name="input_subnets"></a> [subnets](#input\_subnets) | List of Subnet ids in which the Service runs | `list(string)` | n/a | yes |
 | <a name="input_task_cpu"></a> [task\_cpu](#input\_task\_cpu) | value in cpu units for the task | `number` | n/a | yes |
 | <a name="input_task_memory"></a> [task\_memory](#input\_task\_memory) | value in MiB for the task | `number` | n/a | yes |
+| <a name="input_task_only"></a> [task\_only](#input\_task\_only) | Whether to only create the task definition without creating the service. This can be used when you want to run a task on a schedule | `bool` | `false` | no |
 | <a name="input_task_role"></a> [task\_role](#input\_task\_role) | IAM Role used as the task role, leave empty to create a new role | <pre>object({<br/>    name = string<br/>    arn  = string<br/>  })</pre> | `null` | no |
+| <a name="input_task_schedule"></a> [task\_schedule](#input\_task\_schedule) | Scheduled task configuration | <pre>object({<br/>    schedule    = string<br/>    task_count  = optional(number, 1)<br/>    enabled     = optional(bool, true)<br/>    description = optional(string)<br/>  })</pre> | `null` | no |
 | <a name="input_vpc_id"></a> [vpc\_id](#input\_vpc\_id) | ID of the VPC in which the service is deployed | `string` | n/a | yes |
 | <a name="input_xray_container_image"></a> [xray\_container\_image](#input\_xray\_container\_image) | The xray daemon container image | `string` | `"amazon/aws-xray-daemon:3.x"` | no |
 

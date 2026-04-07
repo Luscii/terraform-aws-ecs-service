@@ -1,12 +1,32 @@
 data "aws_iam_policy_document" "assume_role" {
-  count = var.task_role == null || var.execution_role == null ? 1 : 0
+  count = var.task_role == null || var.execution_role == null || var.task_schedule != null ? 1 : 0
 
-  statement {
-    actions = ["sts:AssumeRole"]
+  dynamic "statement" {
+    for_each = var.task_role != null || var.execution_role != null ? [1] : []
 
-    principals {
-      type        = "Service"
-      identifiers = ["ecs.amazonaws.com", "ecs-tasks.amazonaws.com"]
+    content {
+      actions = ["sts:AssumeRole"]
+
+      principals {
+        type        = "Service"
+        identifiers = ["ecs.amazonaws.com"]
+      }
+    }
+  }
+
+  dynamic "statement" {
+    for_each = var.task_schedule != null ? [1] : []
+
+    content {
+      actions = ["sts:AssumeRole"]
+
+      principals {
+        type = "Service"
+        identifiers = [
+          "ecs-tasks.amazonaws.com",
+          "events.amazonaws.com"
+        ]
+      }
     }
   }
 }
@@ -123,4 +143,50 @@ resource "aws_iam_role_policy" "task_ecs_exec" {
   name   = join("-", [module.label.id, "ecs-exec"])
   role   = try(aws_iam_role.task[0].name, var.task_role.name)
   policy = data.aws_iam_policy_document.task_ecs_exec[0].json
+}
+
+##############
+# Event Role #
+##############
+
+data "aws_iam_policy_document" "event_role" {
+  count = var.task_schedule == null ? 0 : 1
+
+  statement {
+    effect    = "Allow"
+    actions   = ["ecs:RunTask"]
+    resources = [aws_ecs_task_definition.this.arn]
+  }
+
+  statement {
+    effect  = "Allow"
+    actions = ["iam:PassRole"]
+
+    resources = [
+      try(aws_iam_role.execution[0].arn, var.execution_role.arn),
+      try(aws_iam_role.task[0].arn, var.task_role.arn),
+    ]
+
+    condition {
+      test     = "StringLike"
+      values   = ["ecs-tasks.amazonaws.com"]
+      variable = "iam:PassedToService"
+    }
+  }
+}
+
+resource "aws_iam_role" "event" {
+  count = var.task_schedule == null ? 0 : 1
+
+  name               = join("-", [module.label.id, "event"])
+  assume_role_policy = data.aws_iam_policy_document.assume_role[0].json
+  tags               = module.label.tags
+}
+
+resource "aws_iam_role_policy" "event" {
+  count = var.task_schedule == null ? 0 : 1
+
+  name   = join("-", [module.label.id, "event"])
+  role   = aws_iam_role.event[0].id
+  policy = data.aws_iam_policy_document.event_role[0].json
 }

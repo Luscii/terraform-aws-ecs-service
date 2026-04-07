@@ -19,7 +19,7 @@ module "autoscaling_label" {
 resource "aws_appautoscaling_target" "this" {
   count = local.scaling_enabled ? 1 : 0
 
-  resource_id        = "service/${data.aws_ecs_cluster.this.cluster_name}/${aws_ecs_service.this.name}"
+  resource_id        = "service/${data.aws_ecs_cluster.this.cluster_name}/${aws_ecs_service.this[0].name}"
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"
 

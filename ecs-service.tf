@@ -23,7 +23,8 @@ locals {
 }
 
 resource "aws_ecs_service" "this" {
-  name = module.label.id
+  count = var.task_only ? 0 : 1
+  name  = module.label.id
 
   cluster          = data.aws_ecs_cluster.this.arn
   task_definition  = aws_ecs_task_definition.this.arn
