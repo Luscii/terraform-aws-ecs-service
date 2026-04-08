@@ -2,7 +2,7 @@ data "aws_iam_policy_document" "assume_role" {
   count = var.task_role == null || var.execution_role == null || var.scheduled_task != null ? 1 : 0
 
   dynamic "statement" {
-    for_each = var.task_role != null || var.execution_role != null ? [1] : []
+    for_each = var.task_role == null || var.execution_role == null ? [1] : []
 
     content {
       actions = ["sts:AssumeRole"]
@@ -179,7 +179,7 @@ data "aws_iam_policy_document" "event_role" {
 }
 
 resource "aws_iam_role" "event" {
-  count = var.scheduled_task == null ? 0 : 1
+  count = var.scheduled_task != null ? 1 : 0
 
   name               = join("-", [module.label.id, "event"])
   assume_role_policy = data.aws_iam_policy_document.assume_role[0].json
@@ -187,7 +187,7 @@ resource "aws_iam_role" "event" {
 }
 
 resource "aws_iam_role_policy" "event" {
-  count = var.scheduled_task == null ? 0 : 1
+  count = var.scheduled_task != null ? 1 : 0
 
   name   = join("-", [module.label.id, "event"])
   role   = aws_iam_role.event[0].id
