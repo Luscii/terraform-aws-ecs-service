@@ -21,11 +21,8 @@ data "aws_iam_policy_document" "event_assume_role" {
     actions = ["sts:AssumeRole"]
 
     principals {
-      type = "Service"
-      identifiers = [
-        "ecs-tasks.amazonaws.com",
-        "events.amazonaws.com"
-      ]
+      type        = "Service"
+      identifiers = ["events.amazonaws.com"]
     }
   }
 }
