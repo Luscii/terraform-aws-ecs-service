@@ -229,7 +229,7 @@ module "scheduled_task" {
   }]
 
   # Schedule task to run every day at 2 AM UTC
-  task_schedule = {
+  scheduled_task = {
     schedule    = "cron(0 2 * * ? *)"
     description = "Daily report generation"
     task_count  = 1
@@ -240,7 +240,7 @@ module "scheduled_task" {
 }
 ```
 
-**Note:** When `task_schedule` is set, the module creates EventBridge rules and IAM roles for scheduled execution. The ECS service is still created by default; use `task_only = true` to skip service creation.
+**Note:** When `scheduled_task` is set, the module creates EventBridge rules and IAM roles for scheduled execution. The ECS service is still created by default; use `task_only = true` to skip service creation.
 ```
 
 ```markdown
@@ -326,7 +326,7 @@ Create separate directories for common use cases:
 **For ECS Service Module:**
 - `with-load-balancer/` - Service behind an ALB
 - `service-connect-only/` - Internal service using Service Connect
-- `scheduled-task/` - Scheduled ECS task using `task_schedule` (without service)
+- `scheduled-task/` - Scheduled ECS task using `scheduled_task` (without service)
 - `task-only/` - Task definition only using `task_only = true` (for manual task runs or external orchestration)
 - `with-autoscaling/` - Service with auto-scaling enabled
 

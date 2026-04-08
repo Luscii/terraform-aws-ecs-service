@@ -1,5 +1,5 @@
 locals {
-  scaling_enabled                 = var.scaling != null
+  scaling_enabled                 = var.scaling != null && var.task_only == false
   scheduled_scaling_enabled       = local.scaling_enabled && var.scaling_scheduled != null
   target_tracking_scaling_enabled = local.scaling_enabled && var.scaling_target != null
 }

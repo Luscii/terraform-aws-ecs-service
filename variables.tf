@@ -71,6 +71,26 @@ variable "task_memory" {
   description = "value in MiB for the task"
 }
 
+
+variable "task_only" {
+  type        = bool
+  description = "Whether to only create the task definition without creating the service. This can be used when you want to run a task on a schedule"
+  default     = false
+}
+
+variable "scheduled_task" {
+  type = object({
+    schedule         = string
+    description      = optional(string)
+    task_count       = optional(number, 1)
+    enabled          = optional(bool, true)
+    assign_public_ip = optional(bool, false)
+  })
+
+  description = "Scheduled task configuration"
+  default     = null
+}
+
 variable "container_definitions" {
   type = list(object({
     name              = string
@@ -366,21 +386,4 @@ variable "xray_container_image" {
   type        = string
   description = "The xray daemon container image"
   default     = "amazon/aws-xray-daemon:3.x"
-}
-
-variable "task_only" {
-  type        = bool
-  description = "Whether to only create the task definition without creating the service. This can be used when you want to run a task on a schedule"
-  default     = false
-}
-
-variable "task_schedule" {
-  type = object({
-    schedule    = string
-    task_count  = optional(number, 1)
-    enabled     = optional(bool, true)
-    description = optional(string)
-  })
-  description = "Scheduled task configuration"
-  default     = null
 }

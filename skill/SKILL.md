@@ -13,7 +13,7 @@ Integrates `terraform-aws-ecs-service` into Terraform configurations to deploy A
 - Adding a containerized workload to an existing ECS cluster
 - Configuring Service Connect, DNS discovery, or load balancer integration
 - Setting up auto-scaling for an ECS service
-- Creating scheduled ECS tasks (with `task_schedule`)
+- Creating scheduled ECS tasks (with `scheduled_task`)
 - Creating task definitions only (with `task_only = true`) for manual task execution or external orchestration
 - Referencing ECS service outputs (roles, security groups, discovery URLs)
 
@@ -87,7 +87,7 @@ Progress:
 **Decision flow:**
 
 1. **Scheduled task** (runs on a schedule, no continuous service)
-   - Set `task_schedule` with cron expression
+   - Set `scheduled_task` with cron expression
    - Module creates EventBridge rules and IAM roles
    - Service is still created by default; use `task_only = true` to skip it
 
@@ -99,7 +99,7 @@ Progress:
    - Use for: db migrations, one-off jobs, tasks triggered by Step Functions, etc.
 
 3. **Continuous service** (default)
-   - Don't set `task_only` or `task_schedule`
+   - Don't set `task_only` or `scheduled_task`
    - Module creates a running ECS service with desired task count
    - Use for: APIs, web servers, workers, any long-running process
 
@@ -109,7 +109,7 @@ Progress:
 # Scheduled task (daily at 2 AM)
 module "daily_report" {
   # ...
-  task_schedule = {
+  scheduled_task = {
     schedule    = "cron(0 2 * * ? *)"
     description = "Daily report generation"
     task_count  = 1
@@ -325,7 +325,7 @@ Common validation errors:
 5. **Auto-created IAM roles** — unless `task_role`/`execution_role` provided; policies attached either way
 6. **ECR pull-through cache auto-detected** — set `pull_cache_prefix` on containers to use
 7. **task_only mode** — when `task_only = true`, only task definition, IAM roles, and security group are created; service outputs are `null`
-8. **Scheduled tasks** — when `task_schedule` is set, EventBridge rules and IAM roles for scheduled execution are created automatically
+8. **Scheduled tasks** — when `scheduled_task` is set, EventBridge rules and IAM roles for scheduled execution are created automatically
 
 ## Requirements
 

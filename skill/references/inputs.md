@@ -185,16 +185,16 @@ See [scaling.md](scaling.md) for detailed configuration.
 |----------|------|---------|-------------|
 | `desired_count` | `number` | `1` | Initial task count. **Ignored after creation** (lifecycle ignore) |
 | `task_only` | `bool` | `false` | Create only task definition without the ECS service. Use for manual task execution or external orchestration. When `true`, service outputs are `null` |
-| `task_schedule` | `object` | `null` | Scheduled task configuration. Creates EventBridge rules and IAM roles for scheduled execution |
+| `scheduled_task` | `object` | `null` | Scheduled task configuration. Creates EventBridge rules and IAM roles for scheduled execution |
 | `assign_public_ip` | `bool` | `false` | Assign public IP to tasks |
 | `platform_version` | `string` | `"LATEST"` | Fargate platform version |
 | `force_new_deployment` | `bool` | `false` | Force new deployment on apply |
 | `app_version` | `string` | `null` | Added as `AppVersion` tag on task definition |
 
-### task_schedule Configuration
+### scheduled_task Configuration
 
 ```hcl
-task_schedule = {
+scheduled_task = {
   schedule    = string                # Required: Cron or rate expression
   task_count  = optional(number, 1)   # Number of tasks to launch
   enabled     = optional(bool, true)  # Whether the schedule is enabled
@@ -215,4 +215,4 @@ schedule = "rate(1 hour)"
 schedule = "rate(1 day)"
 ```
 
-**Note:** When `task_schedule` is set, the module creates EventBridge rules, targets, and IAM roles for scheduled execution. The ECS service is still created by default; combine with `task_only = true` to skip service creation.
+**Note:** When `scheduled_task` is set, the module creates EventBridge rules, targets, and IAM roles for scheduled execution. The ECS service is still created by default; combine with `task_only = true` to skip service creation.

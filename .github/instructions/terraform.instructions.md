@@ -403,8 +403,8 @@ resource "aws_ecs_service" "this" {
 }
 
 resource "aws_cloudwatch_event_rule" "this" {
-  count = var.task_schedule == null ? 0 : 1
-  # Creates scheduled event only when task_schedule is configured
+  count = var.scheduled_task == null ? 0 : 1
+  # Creates scheduled event only when scheduled_task is configured
   # ...
 }
 ```
@@ -432,7 +432,7 @@ try(aws_ecs_service.this[0].service_connect_configuration[0].service[0].discover
 
 **Examples from this Module:**
 - Service references: `one(aws_ecs_service.this[*])` or `try(aws_ecs_service.this[0], null)` (when `task_only = true`, service doesn't exist)
-- Event rule references: `one(aws_cloudwatch_event_rule.this[*])` (when `task_schedule = null`, rule doesn't exist)
+- Event rule references: `one(aws_cloudwatch_event_rule.this[*])` (when `scheduled_task = null`, rule doesn't exist)
 - Scaling references: `one(aws_appautoscaling_target.this[*])` (when scaling is disabled)
 
 ## Outputs
