@@ -1,35 +1,31 @@
 data "aws_iam_policy_document" "assume_role" {
-  count = var.task_role == null || var.execution_role == null || var.scheduled_task != null ? 1 : 0
+  count = var.task_role == null || var.execution_role == null ? 1 : 0
 
-  dynamic "statement" {
-    for_each = var.task_role == null || var.execution_role == null ? [1] : []
+  statement {
+    actions = ["sts:AssumeRole"]
 
-    content {
-      actions = ["sts:AssumeRole"]
-
-      principals {
-        type = "Service"
-        identifiers = [
-          "ecs.amazonaws.com",
-          "ecs-tasks.amazonaws.com"
-        ]
-      }
+    principals {
+      type = "Service"
+      identifiers = [
+        "ecs.amazonaws.com",
+        "ecs-tasks.amazonaws.com"
+      ]
     }
   }
+}
 
-  dynamic "statement" {
-    for_each = var.scheduled_task != null ? [1] : []
+data "aws_iam_policy_document" "event_assume_role" {
+  count = var.scheduled_task != null ? 1 : 0
 
-    content {
-      actions = ["sts:AssumeRole"]
+  statement {
+    actions = ["sts:AssumeRole"]
 
-      principals {
-        type = "Service"
-        identifiers = [
-          "ecs-tasks.amazonaws.com",
-          "events.amazonaws.com"
-        ]
-      }
+    principals {
+      type = "Service"
+      identifiers = [
+        "ecs-tasks.amazonaws.com",
+        "events.amazonaws.com"
+      ]
     }
   }
 }
@@ -153,7 +149,7 @@ resource "aws_iam_role_policy" "task_ecs_exec" {
 ##############
 
 data "aws_iam_policy_document" "event_role" {
-  count = var.scheduled_task == null ? 0 : 1
+  count = var.scheduled_task != null ? 1 : 0
 
   statement {
     effect    = "Allow"
@@ -182,7 +178,7 @@ resource "aws_iam_role" "event" {
   count = var.scheduled_task != null ? 1 : 0
 
   name               = join("-", [module.label.id, "event"])
-  assume_role_policy = data.aws_iam_policy_document.assume_role[0].json
+  assume_role_policy = data.aws_iam_policy_document.event_assume_role[0].json
   tags               = module.label.tags
 }
 
