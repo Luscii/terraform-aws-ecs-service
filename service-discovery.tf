@@ -24,7 +24,7 @@ locals {
 
 # Create Cloud Map services for each DNS namespace
 resource "aws_service_discovery_service" "this" {
-  for_each = local.create_service_discovery ? toset(var.service_discovery_dns_namespace_ids) : []
+  for_each = local.create_service_discovery ? toset(var.service_discovery_dns_namespace_ids) : toset([])
 
   name = local.service_discovery_name
 
