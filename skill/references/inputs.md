@@ -195,10 +195,11 @@ See [scaling.md](scaling.md) for detailed configuration.
 
 ```hcl
 scheduled_task = {
-  schedule    = string                # Required: Cron or rate expression
-  task_count  = optional(number, 1)   # Number of tasks to launch
-  enabled     = optional(bool, true)  # Whether the schedule is enabled
-  description = optional(string)      # Description for the EventBridge rule
+  schedule         = string                 # Required: Cron or rate expression
+  task_count       = optional(number, 1)    # Number of tasks to launch
+  enabled          = optional(bool, true)   # Whether the schedule is enabled
+  description      = optional(string)       # Description for the EventBridge rule
+  assign_public_ip = optional(bool, false)  # Assign a public IP to scheduled tasks
 }
 ```
 
