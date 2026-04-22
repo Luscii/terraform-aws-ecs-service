@@ -32,11 +32,22 @@ The `scaling_target` variable creates `aws_appautoscaling_policy` resources with
 ```hcl
 scaling_target = {
   "<policy_name>" = {
-    predefined_metric_type = string             # Required
-    resource_label         = optional(string)    # Required for ALBRequestCountPerTarget
-    target_value           = number              # Required
-    scale_in_cooldown      = optional(number, 300)   # Seconds
-    scale_out_cooldown     = optional(number, 300)   # Seconds
+    # Exactly one of predefined_metric_type or customized_metric_specification must be set.
+    predefined_metric_type = optional(string)
+    customized_metric_specification = optional(object({
+      metric_name = string
+      namespace   = string
+      statistic   = optional(string)   # Average, Minimum, Maximum, SampleCount, Sum
+      unit        = optional(string)
+      dimensions = optional(list(object({
+        name  = string
+        value = string
+      })))
+    }))
+    resource_label     = optional(string)    # Required for ALBRequestCountPerTarget
+    target_value       = number              # Required
+    scale_in_cooldown  = optional(number, 300)   # Seconds
+    scale_out_cooldown = optional(number, 300)   # Seconds
   }
 }
 ```
@@ -71,6 +82,34 @@ scaling_target = {
 You can construct this from ALB and target group outputs:
 ```hcl
 resource_label = "${module.alb.arn_suffix}/${aws_lb_target_group.app.arn_suffix}"
+```
+
+### Customized Metric Specification
+
+When the predefined metrics don't cover your use case, set `customized_metric_specification` to target any CloudWatch metric instead. Leave `predefined_metric_type` unset — exactly one of the two must be configured per policy.
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `metric_name` | Yes | CloudWatch metric name |
+| `namespace` | Yes | CloudWatch namespace (e.g. `AWS/SQS`, `MyApp/Queue`) |
+| `statistic` | No | `Average`, `Minimum`, `Maximum`, `SampleCount`, or `Sum`. AWS requires a statistic — set it explicitly |
+| `unit` | No | Metric unit (e.g. `Count`, `Seconds`) |
+| `dimensions` | No | List of `{ name, value }` objects filtering the metric |
+
+```hcl
+scaling_target = {
+  queue_depth = {
+    customized_metric_specification = {
+      metric_name = "ApproximateNumberOfMessagesVisible"
+      namespace   = "AWS/SQS"
+      statistic   = "Average"
+      dimensions = [
+        { name = "QueueName", value = "my-worker-queue" }
+      ]
+    }
+    target_value = 100
+  }
+}
 ```
 
 ### Cooldown Periods
@@ -249,6 +288,30 @@ module "api" {
       resource_label         = "${module.alb.arn_suffix}/${aws_lb_target_group.app.arn_suffix}"
       target_value           = 1000
       scale_out_cooldown     = 60
+    }
+  }
+```
+
+### SQS Queue Depth Scaling (Customized Metric)
+
+```hcl
+  scaling = {
+    min_capacity = 1
+    max_capacity = 20
+  }
+
+  scaling_target = {
+    queue = {
+      customized_metric_specification = {
+        metric_name = "ApproximateNumberOfMessagesVisible"
+        namespace   = "AWS/SQS"
+        statistic   = "Average"
+        dimensions = [
+          { name = "QueueName", value = aws_sqs_queue.jobs.name }
+        ]
+      }
+      target_value       = 50    # Target ~50 messages per task
+      scale_out_cooldown = 60
     }
   }
 ```
