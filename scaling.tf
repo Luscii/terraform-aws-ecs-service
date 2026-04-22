@@ -83,8 +83,30 @@ resource "aws_appautoscaling_policy" "target" {
   service_namespace  = aws_appautoscaling_target.this[0].service_namespace
 
   target_tracking_scaling_policy_configuration {
-    predefined_metric_specification {
-      predefined_metric_type = each.value.predefined_metric_type
+    dynamic "predefined_metric_specification" {
+      for_each = each.value.predefined_metric_type != null ? [1] : []
+      content {
+        predefined_metric_type = each.value.predefined_metric_type
+        resource_label         = each.value.resource_label
+      }
+    }
+
+    dynamic "customized_metric_specification" {
+      for_each = each.value.customized_metric_specification != null ? [each.value.customized_metric_specification] : []
+      content {
+        metric_name = customized_metric_specification.value.metric_name
+        namespace   = customized_metric_specification.value.namespace
+        statistic   = customized_metric_specification.value.statistic
+        unit        = customized_metric_specification.value.unit
+
+        dynamic "dimensions" {
+          for_each = customized_metric_specification.value.dimensions != null ? customized_metric_specification.value.dimensions : []
+          content {
+            name  = dimensions.value.name
+            value = dimensions.value.value
+          }
+        }
+      }
     }
 
     target_value       = each.value.target_value

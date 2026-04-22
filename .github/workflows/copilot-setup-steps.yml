@@ -28,8 +28,22 @@ jobs:
       - name: Get Terraform docs version
         id: get-terraform-docs-version
         run: |
-          VERSION=$(grep '^version:' .terraform-docs.yml | awk '{print $2}')
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          # The version: key in .terraform-docs.yml may be an exact version
+          # (e.g. "0.20.0") or a constraint (e.g. "> 0.20.0", "~> 0.22").
+          # Extract the first x.y.z semver; fall back to normalising x.y to
+          # x.y.0 so the release tag (v${VERSION}) is always valid.
+          RAW_VERSION=$(grep '^version:' .terraform-docs.yml | sed -E 's/^version:[[:space:]]*//; s/"//g')
+          VERSION=$(printf '%s\n' "$RAW_VERSION" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -n1)
+          if [ -z "$VERSION" ]; then
+            SHORT_VERSION=$(printf '%s\n' "$RAW_VERSION" | grep -oE '[0-9]+\.[0-9]+' | head -n1)
+            if [ -n "$SHORT_VERSION" ]; then
+              VERSION="${SHORT_VERSION}.0"
+            else
+              echo "Unable to determine terraform-docs version from .terraform-docs.yml: $RAW_VERSION" >&2
+              exit 1
+            fi
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
       - name: Setup Terraform docs
         uses: jaxxstorm/action-install-gh-release@v3.0.0
         with:
