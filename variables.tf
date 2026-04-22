@@ -361,7 +361,7 @@ variable "scaling_target" {
   default     = null
 
   validation {
-    condition     = var.scaling_target == null ? true : alltrue([for policy in var.scaling_target : policy.predefined_metric_type == null || contains(["ECSServiceAverageCPUUtilization", "ALBRequestCountPerTarget", "ECSServiceAverageMemoryUtilization"], policy.predefined_metric_type)])
+    condition     = var.scaling_target == null ? true : alltrue([for policy in var.scaling_target : policy.predefined_metric_type == null ? true : contains(["ECSServiceAverageCPUUtilization", "ALBRequestCountPerTarget", "ECSServiceAverageMemoryUtilization"], policy.predefined_metric_type)])
     error_message = "When set, predefined_metric_type must be one of ECSServiceAverageCPUUtilization, ALBRequestCountPerTarget, or ECSServiceAverageMemoryUtilization"
   }
 
@@ -394,7 +394,7 @@ variable "scaling_target" {
   validation {
     condition = var.scaling_target == null ? true : alltrue([
       for policy in var.scaling_target :
-      policy.customized_metric_specification == null || contains(["Average", "Minimum", "Maximum", "SampleCount", "Sum"], policy.customized_metric_specification.statistic)
+      policy.customized_metric_specification == null ? true : contains(["Average", "Minimum", "Maximum", "SampleCount", "Sum"], policy.customized_metric_specification.statistic)
     ])
     error_message = "customized_metric_specification.statistic must be one of Average, Minimum, Maximum, SampleCount, or Sum"
   }
