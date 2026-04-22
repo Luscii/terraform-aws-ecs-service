@@ -345,12 +345,24 @@ variable "scaling_target" {
     scale_in_cooldown  = optional(number, 300)
     scale_out_cooldown = optional(number, 300)
   }))
-  description = "Target tracking scaling policies for the service. Enables Target tracking scaling. Predefined metric type must be one of ECSServiceAverageCPUUtilization, ALBRequestCountPerTarget or ECSServiceAverageMemoryUtilization - https://docs.aws.amazon.com/autoscaling/application/APIReference/API_PredefinedMetricSpecification.html"
+  description = <<-EOT
+    Target tracking scaling policies for the service. Each policy must set exactly one of
+    `predefined_metric_type` or `customized_metric_specification`.
+
+    When using `predefined_metric_type`, the allowed values are
+    `ECSServiceAverageCPUUtilization`, `ALBRequestCountPerTarget`, and
+    `ECSServiceAverageMemoryUtilization`. When `predefined_metric_type` is
+    `ALBRequestCountPerTarget`, `resource_label` must also be set.
+
+    AWS documentation:
+    - Predefined metrics: https://docs.aws.amazon.com/autoscaling/application/APIReference/API_PredefinedMetricSpecification.html
+    - Customized metrics: https://docs.aws.amazon.com/autoscaling/application/APIReference/API_CustomizedMetricSpecification.html
+  EOT
   default     = null
 
   validation {
     condition     = var.scaling_target == null ? true : alltrue([for policy in var.scaling_target : policy.predefined_metric_type == null || contains(["ECSServiceAverageCPUUtilization", "ALBRequestCountPerTarget", "ECSServiceAverageMemoryUtilization"], policy.predefined_metric_type)])
-    error_message = "Predefined metric type should be one of ECSServiceAverageCPUUtilization or ECSServiceAverageMemoryUtilization"
+    error_message = "When set, predefined_metric_type must be one of ECSServiceAverageCPUUtilization, ALBRequestCountPerTarget, or ECSServiceAverageMemoryUtilization"
   }
 
   validation {
