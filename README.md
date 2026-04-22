@@ -144,20 +144,20 @@ module "api_service" {
 ### Requirements
 
 | Name | Version |
-|------|---------|
+| ---- | ------- |
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.3 |
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 6.0 |
 
 ### Providers
 
 | Name | Version |
-|------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | 6.27.0 |
+| ---- | ------- |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | 6.41.0 |
 
 ### Modules
 
 | Name | Source | Version |
-|------|--------|---------|
+| ---- | ------ | ------- |
 | <a name="module_autoscaling_label"></a> [autoscaling\_label](#module\_autoscaling\_label) | cloudposse/label/null | 0.25.0 |
 | <a name="module_autoscaling_scheduled_label"></a> [autoscaling\_scheduled\_label](#module\_autoscaling\_scheduled\_label) | cloudposse/label/null | 0.25.0 |
 | <a name="module_autoscaling_target_tracking_label"></a> [autoscaling\_target\_tracking\_label](#module\_autoscaling\_target\_tracking\_label) | cloudposse/label/null | 0.25.0 |
@@ -167,7 +167,7 @@ module "api_service" {
 ### Resources
 
 | Name | Type |
-|------|------|
+| ---- | ---- |
 | [aws_appautoscaling_policy.target](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/appautoscaling_policy) | resource |
 | [aws_appautoscaling_scheduled_action.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/appautoscaling_scheduled_action) | resource |
 | [aws_appautoscaling_target.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/appautoscaling_target) | resource |
@@ -195,7 +195,7 @@ module "api_service" {
 ### Inputs
 
 | Name | Description | Type | Default | Required |
-|------|-------------|------|---------|:--------:|
+| ---- | ----------- | ---- | ------- | :------: |
 | <a name="input_add_xray_container"></a> [add\_xray\_container](#input\_add\_xray\_container) | Whether to add the xray daemon container to the task definition | `bool` | `true` | no |
 | <a name="input_app_version"></a> [app\_version](#input\_app\_version) | Application version to be added as a tag to the task definition | `string` | `null` | no |
 | <a name="input_assign_public_ip"></a> [assign\_public\_ip](#input\_assign\_public\_ip) | Whether the service needs a public ip | `bool` | `false` | no |
@@ -214,7 +214,7 @@ module "api_service" {
 | <a name="input_platform_version"></a> [platform\_version](#input\_platform\_version) | Platform version for the ECS service | `string` | `"LATEST"` | no |
 | <a name="input_scaling"></a> [scaling](#input\_scaling) | Scaling configuration for the service. Enables scaling | <pre>object({<br/>    min_capacity = number<br/>    max_capacity = number<br/>  })</pre> | `null` | no |
 | <a name="input_scaling_scheduled"></a> [scaling\_scheduled](#input\_scaling\_scheduled) | Scheduled scaling policies for the service. Enables Scheduled scaling | <pre>map(object({<br/>    schedule     = string<br/>    timezone     = string<br/>    min_capacity = number<br/>    max_capacity = number<br/>  }))</pre> | `null` | no |
-| <a name="input_scaling_target"></a> [scaling\_target](#input\_scaling\_target) | Target tracking scaling policies for the service. Enables Target tracking scaling. Predefined metric type must be one of ECSServiceAverageCPUUtilization, ALBRequestCountPerTarget or ECSServiceAverageMemoryUtilization - https://docs.aws.amazon.com/autoscaling/application/APIReference/API_PredefinedMetricSpecification.html | <pre>map(object({<br/>    predefined_metric_type = string<br/>    resource_label         = optional(string)<br/>    target_value           = number<br/>    scale_in_cooldown      = optional(number, 300)<br/>    scale_out_cooldown     = optional(number, 300)<br/>  }))</pre> | `null` | no |
+| <a name="input_scaling_target"></a> [scaling\_target](#input\_scaling\_target) | Target tracking scaling policies for the service. Enables Target tracking scaling. Predefined metric type must be one of ECSServiceAverageCPUUtilization, ALBRequestCountPerTarget or ECSServiceAverageMemoryUtilization - https://docs.aws.amazon.com/autoscaling/application/APIReference/API_PredefinedMetricSpecification.html | <pre>map(object({<br/>    predefined_metric_type = optional(string)<br/>    customized_metric_specification = optional(object({<br/>      metric_name = string<br/>      namespace   = string<br/>      dimensions = optional(list(object({<br/>        name  = string<br/>        value = string<br/>      })))<br/>    }))<br/>    resource_label     = optional(string)<br/>    target_value       = number<br/>    scale_in_cooldown  = optional(number, 300)<br/>    scale_out_cooldown = optional(number, 300)<br/>  }))</pre> | `null` | no |
 | <a name="input_security_group_ids"></a> [security\_group\_ids](#input\_security\_group\_ids) | List of additional security groups to attach to the service | `list(string)` | `[]` | no |
 | <a name="input_service_connect_configuration"></a> [service\_connect\_configuration](#input\_service\_connect\_configuration) | Service discovery configuration for the service | <pre>object({<br/>    namespace      = optional(string)<br/>    discovery_name = optional(string)<br/>    port_name      = optional(string)<br/>    client_alias = optional(object({<br/>      dns_name = string<br/>      port     = number<br/>    }))<br/>    cloudwatch = optional(object({<br/>      log_group = string<br/>      region    = string<br/>    }))<br/>  })</pre> | `null` | no |
 | <a name="input_service_discovery_dns_namespace_ids"></a> [service\_discovery\_dns\_namespace\_ids](#input\_service\_discovery\_dns\_namespace\_ids) | List of AWS Cloud Map private DNS namespace IDs for automatic service discovery registration.<br/>When provided, the module automatically creates Cloud Map services in these namespaces, enabling<br/>DNS-based service discovery for non-ECS clients (EC2 instances, Lambda, etc.).<br/><br/>The service name is derived from service\_connect\_configuration.client\_alias.dns\_name.<br/>The container name and port are automatically mapped from service\_connect\_configuration.<br/><br/>This provides an automated alternative to manually configuring service\_registries.<br/>Both approaches can be used simultaneously for different discovery scenarios.<br/><br/>Example: ["ns-1234567890abcdef", "ns-0987654321fedcba"] | `list(string)` | `[]` | no |
@@ -229,7 +229,7 @@ module "api_service" {
 ### Outputs
 
 | Name | Description |
-|------|-------------|
+| ---- | ----------- |
 | <a name="output_cluster_arn"></a> [cluster\_arn](#output\_cluster\_arn) | The ARN of the ECS cluster |
 | <a name="output_cluster_name"></a> [cluster\_name](#output\_cluster\_name) | The name of the ECS cluster |
 | <a name="output_label_context"></a> [label\_context](#output\_label\_context) | Context of the label for subsequent use |

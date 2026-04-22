@@ -329,17 +329,25 @@ variable "scaling_scheduled" {
 
 variable "scaling_target" {
   type = map(object({
-    predefined_metric_type = string
-    resource_label         = optional(string)
-    target_value           = number
-    scale_in_cooldown      = optional(number, 300)
-    scale_out_cooldown     = optional(number, 300)
+    predefined_metric_type = optional(string)
+    customized_metric_specification = optional(object({
+      metric_name = string
+      namespace   = string
+      dimensions = optional(list(object({
+        name  = string
+        value = string
+      })))
+    }))
+    resource_label     = optional(string)
+    target_value       = number
+    scale_in_cooldown  = optional(number, 300)
+    scale_out_cooldown = optional(number, 300)
   }))
   description = "Target tracking scaling policies for the service. Enables Target tracking scaling. Predefined metric type must be one of ECSServiceAverageCPUUtilization, ALBRequestCountPerTarget or ECSServiceAverageMemoryUtilization - https://docs.aws.amazon.com/autoscaling/application/APIReference/API_PredefinedMetricSpecification.html"
   default     = null
 
   validation {
-    condition     = var.scaling_target == null ? true : alltrue([for policy in var.scaling_target : contains(["ECSServiceAverageCPUUtilization", "ALBRequestCountPerTarget", "ECSServiceAverageMemoryUtilization"], policy.predefined_metric_type)])
+    condition     = var.scaling_target == null ? true : alltrue([for policy in var.scaling_target : policy.predefined_metric_type == null || contains(["ECSServiceAverageCPUUtilization", "ALBRequestCountPerTarget", "ECSServiceAverageMemoryUtilization"], policy.predefined_metric_type)])
     error_message = "Predefined metric type should be one of ECSServiceAverageCPUUtilization or ECSServiceAverageMemoryUtilization"
   }
 
@@ -353,6 +361,20 @@ variable "scaling_target" {
       )
     ])
     error_message = "When predefined metric type is ALBRequestCountPerTarget, resource_label must be set and following the format defined on https://docs.aws.amazon.com/autoscaling/ec2/APIReference/API_PredefinedMetricSpecification.html"
+  }
+
+  validation {
+    condition = var.scaling_target == null ? true : alltrue([
+      for policy in var.scaling_target : policy.predefined_metric_type != null || policy.customized_metric_specification != null
+    ])
+    error_message = "Either predefined_metric_type or customized_metric_specification must be set"
+  }
+
+  validation {
+    condition = var.scaling_target == null ? true : alltrue([
+      for policy in var.scaling_target : !(policy.predefined_metric_type != null && policy.customized_metric_specification != null)
+    ])
+    error_message = "predefined_metric_type and customized_metric_specification cannot be both set"
   }
 }
 
