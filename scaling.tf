@@ -87,6 +87,7 @@ resource "aws_appautoscaling_policy" "target" {
       for_each = each.value.predefined_metric_type != null ? [1] : []
       content {
         predefined_metric_type = each.value.predefined_metric_type
+        resource_label         = each.value.resource_label
       }
     }
 
