@@ -333,7 +333,7 @@ variable "scaling_target" {
     customized_metric_specification = optional(object({
       metric_name = string
       namespace   = string
-      statistic   = optional(string)
+      statistic   = string
       unit        = optional(string)
       dimensions = optional(list(object({
         name  = string
@@ -377,6 +377,14 @@ variable "scaling_target" {
       for policy in var.scaling_target : !(policy.predefined_metric_type != null && policy.customized_metric_specification != null)
     ])
     error_message = "predefined_metric_type and customized_metric_specification cannot be both set"
+  }
+
+  validation {
+    condition = var.scaling_target == null ? true : alltrue([
+      for policy in var.scaling_target :
+      policy.customized_metric_specification == null || contains(["Average", "Minimum", "Maximum", "SampleCount", "Sum"], policy.customized_metric_specification.statistic)
+    ])
+    error_message = "customized_metric_specification.statistic must be one of Average, Minimum, Maximum, SampleCount, or Sum"
   }
 }
 

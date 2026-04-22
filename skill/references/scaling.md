@@ -37,7 +37,7 @@ scaling_target = {
     customized_metric_specification = optional(object({
       metric_name = string
       namespace   = string
-      statistic   = optional(string)   # Average, Minimum, Maximum, SampleCount, Sum
+      statistic   = string             # Average, Minimum, Maximum, SampleCount, Sum
       unit        = optional(string)
       dimensions = optional(list(object({
         name  = string
@@ -92,7 +92,7 @@ When the predefined metrics don't cover your use case, set `customized_metric_sp
 |-------|----------|-------------|
 | `metric_name` | Yes | CloudWatch metric name |
 | `namespace` | Yes | CloudWatch namespace (e.g. `AWS/SQS`, `MyApp/Queue`) |
-| `statistic` | No | `Average`, `Minimum`, `Maximum`, `SampleCount`, or `Sum`. AWS requires a statistic — set it explicitly |
+| `statistic` | Yes | `Average`, `Minimum`, `Maximum`, `SampleCount`, or `Sum` |
 | `unit` | No | Metric unit (e.g. `Count`, `Seconds`) |
 | `dimensions` | No | List of `{ name, value }` objects filtering the metric |
 
