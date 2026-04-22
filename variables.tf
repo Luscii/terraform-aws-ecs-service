@@ -333,6 +333,8 @@ variable "scaling_target" {
     customized_metric_specification = optional(object({
       metric_name = string
       namespace   = string
+      statistic   = optional(string)
+      unit        = optional(string)
       dimensions = optional(list(object({
         name  = string
         value = string
