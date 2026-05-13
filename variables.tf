@@ -151,8 +151,11 @@ variable "execution_role" {
 }
 
 variable "iam_role_path" {
-  type        = string
-  description = "IAM path applied to the task and execution roles when the module creates them (ignored when task_role/execution_role are supplied). Required by deploy roles that scope iam:CreateRole resources by path, e.g. `/services/<repo>/`."
+  type = object({
+    service_prefix = optional(string, "services")
+    service_name   = string
+  })
+  description = "When set, places the module-created task and execution roles at IAM path `/<service_prefix>/<service_name>/` with simplified names (`execution`, `task`) — the path encodes the per-service scope so the name no longer needs the module-label prefix. Required by deploy roles that scope `iam:CreateRole` resources by path. When null, roles keep the legacy `$${module.label.id}-execution` / `$${module.label.id}-task` names at the default IAM path. Ignored when task_role/execution_role are supplied."
   default     = null
 }
 
