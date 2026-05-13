@@ -18,9 +18,11 @@ data "aws_iam_policy_document" "assume_role" {
 resource "aws_iam_role" "execution" {
   count = var.execution_role == null ? 1 : 0
 
-  name               = join("-", [module.label.id, "execution"])
-  assume_role_policy = data.aws_iam_policy_document.assume_role[0].json
-  tags               = module.label.tags
+  name                 = join("-", [module.label.id, "execution"])
+  path                 = var.iam_role_path
+  permissions_boundary = var.iam_role_permissions_boundary
+  assume_role_policy   = data.aws_iam_policy_document.assume_role[0].json
+  tags                 = module.label.tags
 }
 
 resource "aws_iam_role_policy_attachment" "execution_ecr_public" {
@@ -87,9 +89,11 @@ resource "aws_iam_role_policy" "execution_pull_cache" {
 resource "aws_iam_role" "task" {
   count = var.task_role == null ? 1 : 0
 
-  name               = join("-", [module.label.id, "task"])
-  assume_role_policy = data.aws_iam_policy_document.assume_role[0].json
-  tags               = module.label.tags
+  name                 = join("-", [module.label.id, "task"])
+  path                 = var.iam_role_path
+  permissions_boundary = var.iam_role_permissions_boundary
+  assume_role_policy   = data.aws_iam_policy_document.assume_role[0].json
+  tags                 = module.label.tags
 }
 
 resource "aws_iam_role_policy_attachment" "task_xray_daemon" {

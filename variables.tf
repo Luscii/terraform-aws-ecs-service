@@ -150,6 +150,18 @@ variable "execution_role" {
   default     = null
 }
 
+variable "iam_role_path" {
+  type        = string
+  description = "IAM path applied to the task and execution roles when the module creates them (ignored when task_role/execution_role are supplied). Required by deploy roles that scope iam:CreateRole resources by path, e.g. `/services/<repo>/`."
+  default     = null
+}
+
+variable "iam_role_permissions_boundary" {
+  type        = string
+  description = "ARN of the IAM permissions boundary attached to the task and execution roles when the module creates them (ignored when task_role/execution_role are supplied). Required by deploy roles that gate iam:CreateRole with an iam:PermissionsBoundary condition."
+  default     = null
+}
+
 variable "enable_ecs_execute_command" {
   type        = bool
   description = "Enables ECS exec to the service and attaches required IAM policy to task role"
