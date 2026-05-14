@@ -57,7 +57,7 @@ These return the module-created role or the user-provided role, whichever applie
 
 | Output | Type | Value Expression | Description |
 |--------|------|-----------------|-------------|
-| `volume_iam_policy_json` | `string` or `null` | `try(data.aws_iam_policy_document.task_volumes[0].json, null)` | Least-privilege IAM policy document the module computes from `var.volumes`. Already attached to the task role inline by default. `null` when no volume contributes statements (ephemeral-only, `attach_iam_policy = false` everywhere, EFS without IAM auth). Useful for opt-out consumers or those on bring-your-own task roles. See [volumes.md](volumes.md#opting-out-per-volume) for the opt-out recipe. |
+| `volume_iam_policy_json` | `string` or `null` | `try(data.aws_iam_policy_document.task_volumes[0].json, null)` | Full least-privilege IAM policy document the module computes from `var.volumes`, covering every contributing volume regardless of `attach_iam_policy`. The module's inline policy attaches a filtered subset (`attach_iam_policy = true` only); this output stays the full document so opt-out consumers can attach the JSON to their own role. `null` only when no volume contributes statements (ephemeral-only, EFS without IAM auth). See [volumes.md](volumes.md#opting-out-per-volume) for the opt-out recipe. |
 
 ### Service Discovery
 

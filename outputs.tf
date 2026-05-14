@@ -95,7 +95,7 @@ output "service_discovery_internal_url" {
 
 output "volume_iam_policy_json" {
   value       = try(data.aws_iam_policy_document.task_volumes[0].json, null)
-  description = "The least-privilege IAM policy document (JSON) the module computes for the declared `volumes`. Already attached inline to the task role by default. Null when no volume contributes statements (e.g. ephemeral-only, attach_iam_policy=false everywhere, or EFS without IAM auth). Useful for consumers on bring-your-own task roles, or those who opted out of auto-attach via `attach_iam_policy = false` and want to attach the policy themselves."
+  description = "The full least-privilege IAM policy document (JSON) the module computes for the declared `volumes`, covering every contributing volume regardless of `attach_iam_policy`. The module's inline `aws_iam_role_policy.task_volumes` attaches a filtered subset (volumes with `attach_iam_policy = true` only); this output stays the full document so opt-out consumers can attach the JSON to their own role. Null only when no volume contributes statements (ephemeral-only, or EFS without IAM auth)."
 }
 
 output "security_group_id" {
