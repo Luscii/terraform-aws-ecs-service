@@ -10,6 +10,10 @@ on:
         description: Type of release
         required: true
         type: string
+    secrets:
+      DX_BEARER_TOKEN:
+        required: true
+        description: 'DX bearer token for recording the deployment in getdx.net'
 
 jobs:
   latest-release:
