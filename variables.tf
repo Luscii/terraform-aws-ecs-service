@@ -150,6 +150,21 @@ variable "execution_role" {
   default     = null
 }
 
+variable "iam_role_path" {
+  type = object({
+    service_prefix = optional(string, "services")
+    service_name   = string
+  })
+  description = "When set, places the module-created task and execution roles at IAM path `/<service_prefix>/<service_name>/` and drops the `namespace` segment from the role name (the path already encodes the parent scope). Resulting name shape: `<environment>-<stage>-<name>-<roletype>`, e.g. `eu-tst-nhs-mesh-execution`. Required by deploy roles that scope `iam:CreateRole` resources by path. When null, roles keep the full cloudposse-label-prefixed names at the default IAM path. Ignored when task_role/execution_role are supplied."
+  default     = null
+}
+
+variable "iam_role_permissions_boundary" {
+  type        = string
+  description = "ARN of the IAM permissions boundary attached to the task and execution roles when the module creates them (ignored when task_role/execution_role are supplied). Required by deploy roles that gate iam:CreateRole with an iam:PermissionsBoundary condition."
+  default     = null
+}
+
 variable "enable_ecs_execute_command" {
   type        = bool
   description = "Enables ECS exec to the service and attaches required IAM policy to task role"

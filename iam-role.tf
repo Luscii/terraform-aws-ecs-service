@@ -11,6 +11,49 @@ data "aws_iam_policy_document" "assume_role" {
   }
 }
 
+locals {
+  # Computed IAM path for the module-created roles. Null when
+  # var.iam_role_path is unset, so terraform omits the `path` argument
+  # and AWS applies its default (`/`) — preserving prior behaviour for
+  # existing consumers.
+  role_path = var.iam_role_path == null ? null : "/${var.iam_role_path.service_prefix}/${var.iam_role_path.service_name}/"
+
+  # When `iam_role_path` is set, the path encodes the parent scope so
+  # the `namespace` segment is redundant in the role name. Drop it
+  # from the label order; keep `environment` / `stage` / `name` /
+  # `attributes` so the name stays unique across regions, stays
+  # readable about which stage owns the role, and disambiguates
+  # multiple services that share a single repo / OIDC consumer.
+  # Resulting shape: `<environment>-<stage>-<name>-<roletype>`,
+  # e.g. `eu-tst-nhs-mesh-execution`. Falling back to `null` here
+  # lets cloudposse label use the consumer's configured label_order
+  # (or the cloudposse default, which includes `namespace`).
+  role_label_order = var.iam_role_path == null ? null : ["environment", "stage", "name", "attributes"]
+}
+
+# One label sub-module per role, mirroring the pattern consumers like
+# mesh-client already use for their own role labels. Each role gets a
+# `Name` tag derived from its own id (rather than the parent service
+# label's id), which makes the IAM console + cost-explorer views
+# easier to navigate.
+module "execution_role_label" {
+  source  = "cloudposse/label/null"
+  version = "0.25.0"
+
+  context     = module.label.context
+  attributes  = ["execution"]
+  label_order = local.role_label_order
+}
+
+module "task_role_label" {
+  source  = "cloudposse/label/null"
+  version = "0.25.0"
+
+  context     = module.label.context
+  attributes  = ["task"]
+  label_order = local.role_label_order
+}
+
 # ############## #
 # Execution Role #
 # ############## #
@@ -18,9 +61,14 @@ data "aws_iam_policy_document" "assume_role" {
 resource "aws_iam_role" "execution" {
   count = var.execution_role == null ? 1 : 0
 
-  name               = join("-", [module.label.id, "execution"])
-  assume_role_policy = data.aws_iam_policy_document.assume_role[0].json
-  tags               = module.label.tags
+  name                 = module.execution_role_label.id
+  path                 = local.role_path
+  permissions_boundary = var.iam_role_permissions_boundary
+  assume_role_policy   = data.aws_iam_policy_document.assume_role[0].json
+  # Preserve the parent-label tag set for consumers on the legacy
+  # (path-less) shape so the upgrade is a true no-op for them; opt in
+  # to per-role tags only when `iam_role_path` is set.
+  tags = var.iam_role_path == null ? module.label.tags : module.execution_role_label.tags
 }
 
 resource "aws_iam_role_policy_attachment" "execution_ecr_public" {
@@ -87,9 +135,12 @@ resource "aws_iam_role_policy" "execution_pull_cache" {
 resource "aws_iam_role" "task" {
   count = var.task_role == null ? 1 : 0
 
-  name               = join("-", [module.label.id, "task"])
-  assume_role_policy = data.aws_iam_policy_document.assume_role[0].json
-  tags               = module.label.tags
+  name                 = module.task_role_label.id
+  path                 = local.role_path
+  permissions_boundary = var.iam_role_permissions_boundary
+  assume_role_policy   = data.aws_iam_policy_document.assume_role[0].json
+  # See note on aws_iam_role.execution.tags.
+  tags = var.iam_role_path == null ? module.label.tags : module.task_role_label.tags
 }
 
 resource "aws_iam_role_policy_attachment" "task_xray_daemon" {
