@@ -65,7 +65,10 @@ resource "aws_iam_role" "execution" {
   path                 = local.role_path
   permissions_boundary = var.iam_role_permissions_boundary
   assume_role_policy   = data.aws_iam_policy_document.assume_role[0].json
-  tags                 = module.execution_role_label.tags
+  # Preserve the parent-label tag set for consumers on the legacy
+  # (path-less) shape so the upgrade is a true no-op for them; opt in
+  # to per-role tags only when `iam_role_path` is set.
+  tags = var.iam_role_path == null ? module.label.tags : module.execution_role_label.tags
 }
 
 resource "aws_iam_role_policy_attachment" "execution_ecr_public" {
@@ -136,7 +139,8 @@ resource "aws_iam_role" "task" {
   path                 = local.role_path
   permissions_boundary = var.iam_role_permissions_boundary
   assume_role_policy   = data.aws_iam_policy_document.assume_role[0].json
-  tags                 = module.task_role_label.tags
+  # See note on aws_iam_role.execution.tags.
+  tags = var.iam_role_path == null ? module.label.tags : module.task_role_label.tags
 }
 
 resource "aws_iam_role_policy_attachment" "task_xray_daemon" {
