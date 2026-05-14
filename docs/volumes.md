@@ -272,7 +272,13 @@ so you can attach it (or a modified version) yourself:
 
 ```hcl
 resource "aws_iam_role_policy" "volumes" {
-  count  = var.task_role == null ? 1 : 0
+  # Skip the resource when the module has no statements to contribute
+  # (ephemeral-only services, or every contributing volume is EFS
+  # with `iam = false`). Works for both module-created and
+  # bring-your-own task roles — `service_task_role_name` resolves
+  # correctly in both cases.
+  count = module.service.volume_iam_policy_json != null ? 1 : 0
+
   name   = "my-service-volumes"
   role   = module.service.service_task_role_name
   policy = module.service.volume_iam_policy_json

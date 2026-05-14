@@ -209,9 +209,15 @@ volumes = {
 }
 
 resource "aws_iam_role_policy" "data_volumes" {
+  # Null when no volume contributes IAM (ephemeral-only or
+  # EFS-without-IAM-auth). Works for module-created and bring-your-own
+  # task roles alike — `service_task_role_name` resolves to whichever
+  # is in use.
+  count = module.my_service.volume_iam_policy_json != null ? 1 : 0
+
   name   = "my-service-data-volumes"
   role   = module.my_service.service_task_role_name
-  policy = module.my_service.volume_iam_policy_json    # the same JSON the module would have attached
+  policy = module.my_service.volume_iam_policy_json    # the full JSON the module computed
 }
 ```
 
