@@ -344,6 +344,51 @@ run "validation_rejects_type_subblock_mismatch" {
   expect_failures = [var.volumes]
 }
 
+run "validation_rejects_efs_root_directory_with_access_point" {
+  command = plan
+
+  variables {
+    volumes = {
+      patient = {
+        type = "efs"
+        efs = {
+          file_system_id = "fs-12345678"
+          root_directory = "/subdir"
+          authorization_config = {
+            access_point_id = "fsap-aaaabbbbccccdddd"
+          }
+        }
+      }
+    }
+  }
+
+  expect_failures = [var.volumes]
+}
+
+run "validation_accepts_efs_root_slash_with_access_point" {
+  command = plan
+
+  variables {
+    volumes = {
+      patient = {
+        type = "efs"
+        efs = {
+          file_system_id = "fs-12345678"
+          root_directory = "/"
+          authorization_config = {
+            access_point_id = "fsap-aaaabbbbccccdddd"
+          }
+        }
+      }
+    }
+  }
+
+  assert {
+    condition     = length(aws_iam_role_policy.task_volumes) == 1
+    error_message = "EFS with access point + root_directory = / should still produce a working volume and policy"
+  }
+}
+
 run "precondition_rejects_undeclared_source_volume" {
   command = plan
 

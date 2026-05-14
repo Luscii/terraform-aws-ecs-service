@@ -125,7 +125,7 @@ choice.
 | Field | Default | Notes |
 | --- | --- | --- |
 | `file_system_id` | (required) | The EFS file system ID, e.g. `fs-0a1b2c3d`. The module composes the ARN. |
-| `root_directory` | AWS default (`/`) | A subdirectory to expose as the mount root. Ignored when an access point is set (access points have their own root). |
+| `root_directory` | AWS default (`/`) | A subdirectory to expose as the mount root. **Must be omitted or `/` when `authorization_config.access_point_id` is set** — access points root the mount themselves, and ECS rejects any other combination at task definition registration. The module validates this at plan time. |
 | `transit_encryption_port` | AWS-chosen | The port for the encrypted NFS channel. AWS picks one if omitted. Transit encryption itself is always `ENABLED` on the rendered volume — the module does not expose an opt-out. |
 | `kms_key_arn` | `null` | Set when the file system is encrypted with a customer-managed KMS key. The module uses this ARN to scope the auto-attached KMS statements. |
 | `authorization_config.access_point_id` | `null` | The EFS access point to mount through. Strongly recommended for any multi-tenant or compliance-sensitive use. |

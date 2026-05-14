@@ -336,6 +336,7 @@ Common validation errors:
 - **"Load Balancer container name must be one of the container names"** — `load_balancers[].container_name` doesn't match any container
 - **"Each volume's `type` must be one of: ephemeral, efs, s3files"** — invalid `var.volumes[*].type` value
 - **"Each volume must have a configuration block matching its `type`..."** — type/sub-block mismatch in `var.volumes` (e.g. `type = "efs"` with an `s3files` block, or `type = "ephemeral"` with anything)
+- **"When an EFS volume has `authorization_config.access_point_id` set, `root_directory` must be omitted or set to \"/\"..."** — access points root the mount themselves; drop the `root_directory` field or set it to `/`
 - **"Every container `mount_points[*].sourceVolume` must reference a key declared in `var.volumes`..."** — typo in `sourceVolume`, or you forgot to add the volume entry
 
 ## Key Behaviors

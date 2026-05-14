@@ -211,6 +211,24 @@ variable "volumes" {
     ])
     error_message = "Each volume must have a configuration block matching its `type` and only that block. type=ephemeral expects neither efs nor s3files; type=efs expects only the efs block; type=s3files expects only the s3files block."
   }
+
+  validation {
+    # ECS rejects task definitions where an EFS access point is configured
+    # together with a non-root `root_directory`. The access point already
+    # roots the mount itself, and AWS treats any other root_directory as a
+    # conflict. Fail at plan time with a useful message instead of letting
+    # apply hit the AWS API with a confusing registration error.
+    # See https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_EFSVolumeConfiguration.html
+    condition = alltrue([
+      for v in values(var.volumes) :
+      v.type != "efs" ? true : (
+        try(v.efs.authorization_config.access_point_id, null) == null ? true : (
+          try(v.efs.root_directory, null) == null || try(v.efs.root_directory, "") == "/"
+        )
+      )
+    ])
+    error_message = "When an EFS volume has `authorization_config.access_point_id` set, `root_directory` must be omitted or set to \"/\" — access points root-scope the mount themselves. ECS rejects the task definition at registration otherwise."
+  }
 }
 
 variable "task_role" {

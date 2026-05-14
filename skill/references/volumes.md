@@ -95,7 +95,7 @@ volumes = {
 | Field | Type | Default | Notes |
 |-------|------|---------|-------|
 | `file_system_id` | `string` | *required* | EFS file system ID (e.g. `fs-0a1b2c3d`). The module composes the ARN. |
-| `root_directory` | `string` | AWS default (`/`) | Subdirectory to expose as the mount root. Ignored when an access point is set (access points root themselves). |
+| `root_directory` | `string` | AWS default (`/`) | Subdirectory to expose as the mount root. **Must be omitted or `/` when `authorization_config.access_point_id` is set** — access points root the mount themselves; ECS rejects any other combo. Module validates this at plan time. |
 | `transit_encryption_port` | `number` | AWS-chosen | Custom port for the encrypted NFS channel. Transit encryption itself is hard-wired `ENABLED` — no opt-out, by design. |
 | `kms_key_arn` | `string` | `null` | Set when the file system is encrypted with a customer-managed KMS key. Scopes the auto-attached KMS statements. |
 | `authorization_config.access_point_id` | `string` | `null` | EFS access point ID to mount through. Strongly recommended for multi-tenant / compliance-sensitive workloads. |
@@ -221,11 +221,12 @@ RW-derivation didn't catch, or task roles managed elsewhere).
 
 ## Validation
 
-The module enforces three checks at plan time:
+The module enforces four checks at plan time:
 
 1. **`type` value** — must be one of `ephemeral`, `efs`, `s3files`. Invalid values fail `var.volumes` validation with the allowed-set listed.
 2. **Type / sub-block match** — `ephemeral` rejects any `efs` or `s3files` block; `efs` requires only `efs`; `s3files` requires only `s3files`. Mixed configurations fail `var.volumes` validation.
-3. **`sourceVolume` references a declared volume** — every container's `mount_points[*].sourceVolume` must match a key in `var.volumes`. Cross-variable check; lives as a precondition on `aws_ecs_task_definition.this` (variable validation can't see other variables). Failure lists the declared volumes for quick fix.
+3. **EFS access point ↔ `root_directory`** — when `efs.authorization_config.access_point_id` is set, `efs.root_directory` must be omitted or `/`. ECS rejects any other combo at task definition registration; this rule catches it at plan time.
+4. **`sourceVolume` references a declared volume** — every container's `mount_points[*].sourceVolume` must match a key in `var.volumes`. Cross-variable check; lives as a precondition on `aws_ecs_task_definition.this` (variable validation can't see other variables). Failure lists the declared volumes for quick fix.
 
 ## Requirements
 
