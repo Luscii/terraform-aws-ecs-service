@@ -251,8 +251,10 @@ What the module grants:
 | `efs` with `iam = true`, read-only | `elasticfilesystem:ClientMount` | `arn:aws:elasticfilesystem:<region>:<account>:file-system/<file_system_id>` | `StringEquals` on `elasticfilesystem:AccessPointArn` when `access_point_id` is set |
 | `efs` with `iam = true`, RW, with access point | `ClientMount`, `ClientWrite` | file-system ARN | `AccessPointArn` condition (access point already roots the scope, so `ClientRootAccess` is omitted) |
 | `efs` with `iam = true`, RW, no access point | `ClientMount`, `ClientWrite`, `ClientRootAccess` | file-system ARN | — |
-| `s3files`, read-only | `s3:GetObject`, `s3:ListBucket` | the `access_point_arn` | — |
-| `s3files`, RW | `s3:GetObject`, `s3:ListBucket`, `s3:PutObject`, `s3:DeleteObject` | the `access_point_arn` | — |
+| `s3files`, read-only | `s3:ListBucket` | the `access_point_arn` | — |
+| `s3files`, read-only | `s3:GetObject` | `${access_point_arn}/object/*` | — |
+| `s3files`, RW | `s3:ListBucket` | the `access_point_arn` | — |
+| `s3files`, RW | `s3:GetObject`, `s3:PutObject`, `s3:DeleteObject` | `${access_point_arn}/object/*` | — |
 | Any with `kms_key_arn` set, read-only | `kms:Decrypt` | the `kms_key_arn` | — |
 | Any with `kms_key_arn` set, RW | `kms:Decrypt`, `kms:Encrypt`, `kms:GenerateDataKey` | the `kms_key_arn` | — |
 

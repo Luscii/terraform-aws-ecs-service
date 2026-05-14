@@ -99,19 +99,32 @@ locals {
     if v.type == "efs" && try(v.efs.authorization_config.iam, false)
   ]
 
-  # S3 Files statement specs. One per volume that's type=s3files.
+  # S3 Files statement specs. Two per s3files volume — the bucket-level
+  # `s3:ListBucket` and the object-level `s3:GetObject`/`PutObject`/
+  # `DeleteObject` — because the two action sets need different
+  # resource ARNs. AWS access points scope bucket-level actions to the
+  # access point ARN itself, but object-level actions require the
+  # `<access-point-arn>/object/*` form. Granting `s3:GetObject` on the
+  # bare access point ARN silently grants nothing at runtime.
   # See the `attach_iam_policy` note on `volume_efs_statements`.
-  volume_s3files_statements = [
-    for name, v in var.volumes : {
-      sid              = "S3Files${replace(name, "/[^A-Za-z0-9]/", "")}"
-      access_point_arn = v.s3files.access_point_arn
-      actions = concat(
-        ["s3:GetObject", "s3:ListBucket"],
-        local.volume_is_rw[name] ? ["s3:PutObject", "s3:DeleteObject"] : [],
-      )
-    }
+  volume_s3files_statements = flatten([
+    for name, v in var.volumes : [
+      {
+        sid       = "S3FilesList${replace(name, "/[^A-Za-z0-9]/", "")}"
+        actions   = ["s3:ListBucket"]
+        resources = [v.s3files.access_point_arn]
+      },
+      {
+        sid = "S3FilesObjects${replace(name, "/[^A-Za-z0-9]/", "")}"
+        actions = concat(
+          ["s3:GetObject"],
+          local.volume_is_rw[name] ? ["s3:PutObject", "s3:DeleteObject"] : [],
+        )
+        resources = ["${v.s3files.access_point_arn}/object/*"]
+      }
+    ]
     if v.type == "s3files"
-  ]
+  ])
 
   # KMS keys grouped by ARN with the per-key RW signal aggregated
   # across all volumes that reference them. A key is RW iff any
@@ -179,7 +192,7 @@ data "aws_iam_policy_document" "task_volumes" {
       sid       = statement.value.sid
       effect    = "Allow"
       actions   = statement.value.actions
-      resources = [statement.value.access_point_arn]
+      resources = statement.value.resources
     }
   }
 
