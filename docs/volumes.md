@@ -155,7 +155,7 @@ volumes = {
   mesh = {
     type = "s3files"
     s3files = {
-      access_point_arn = aws_s3control_multi_region_access_point.mesh.alias  # or a regional Mountpoint-for-S3 access point ARN
+      access_point_arn = aws_s3control_access_point.mesh.arn   # Mountpoint-for-S3 access point ARN
       file_system_arn  = aws_s3files_file_system.mesh.arn
       kms_key_arn      = aws_kms_key.mesh.arn
     }
