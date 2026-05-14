@@ -280,7 +280,7 @@ run "mixed_volume_types_render_three_blocks" {
   }
 }
 
-run "attach_iam_policy_false_skips_policy_resource" {
+run "attach_iam_policy_false_skips_policy_resource_but_keeps_computed_doc" {
   command = plan
 
   variables {
@@ -301,6 +301,15 @@ run "attach_iam_policy_false_skips_policy_resource" {
   assert {
     condition     = length(aws_iam_role_policy.task_volumes) == 0
     error_message = "attach_iam_policy = false must not attach an inline policy"
+  }
+
+  # Regression: the computed policy document must stay available via
+  # `volume_iam_policy_json` even when every volume opts out — that's
+  # the whole point of the opt-out path (consumer attaches the JSON
+  # themselves to a role we don't own).
+  assert {
+    condition     = length(data.aws_iam_policy_document.task_volumes) == 1
+    error_message = "attach_iam_policy = false must still compute the policy document so opt-out consumers can attach `volume_iam_policy_json` themselves"
   }
 }
 

@@ -71,9 +71,15 @@ locals {
     ]))
   }
 
-  # EFS statement specs. One per volume that (a) is type=efs, (b) has
-  # attach_iam_policy=true, (c) has authorization_config.iam=true.
-  # Ephemeral and POSIX-only EFS contribute nothing.
+  # EFS statement specs. One per volume that (a) is type=efs and
+  # (b) has authorization_config.iam=true. Ephemeral and POSIX-only
+  # EFS contribute nothing.
+  #
+  # NOTE on `attach_iam_policy`: the *computation* of these statements
+  # is independent of the per-volume `attach_iam_policy` flag. The flag
+  # only gates whether the module creates `aws_iam_role_policy.task_volumes`
+  # — the computed JSON stays exposed via `volume_iam_policy_json` for
+  # opt-out consumers to attach themselves.
   volume_efs_statements = [
     for name, v in var.volumes : {
       sid       = "EfsClient${replace(name, "/[^A-Za-z0-9]/", "")}"
@@ -90,11 +96,11 @@ locals {
         local.volume_is_rw[name] && try(v.efs.authorization_config.access_point_id, null) == null ? ["elasticfilesystem:ClientRootAccess"] : [],
       )
     }
-    if v.type == "efs" && v.attach_iam_policy && try(v.efs.authorization_config.iam, false)
+    if v.type == "efs" && try(v.efs.authorization_config.iam, false)
   ]
 
-  # S3 Files statement specs. One per volume that's type=s3files with
-  # attach_iam_policy=true.
+  # S3 Files statement specs. One per volume that's type=s3files.
+  # See the `attach_iam_policy` note on `volume_efs_statements`.
   volume_s3files_statements = [
     for name, v in var.volumes : {
       sid              = "S3Files${replace(name, "/[^A-Za-z0-9]/", "")}"
@@ -104,33 +110,45 @@ locals {
         local.volume_is_rw[name] ? ["s3:PutObject", "s3:DeleteObject"] : [],
       )
     }
-    if v.type == "s3files" && v.attach_iam_policy
+    if v.type == "s3files"
   ]
 
   # KMS keys grouped by ARN with the per-key RW signal aggregated
   # across all volumes that reference them. A key is RW iff any
-  # volume mounting it is RW. `compact` drops nulls without the
-  # coalesce-on-empty trap (ephemeral volumes have neither efs nor
-  # s3files set, so both try() expressions resolve to null).
+  # volume mounting it is RW. See the `attach_iam_policy` note on
+  # `volume_efs_statements` — KMS aggregation also runs over all
+  # volumes regardless of the flag, so the computed JSON is consistent
+  # for opt-out consumers.
   volume_kms_rw_by_key = {
     for kms_arn in distinct(flatten([
       for v in values(var.volumes) :
-      v.attach_iam_policy ? compact([
+      compact([
         try(v.efs.kms_key_arn, null),
         try(v.s3files.kms_key_arn, null),
-      ]) : []
+      ])
     ])) :
     kms_arn => anytrue([
       for name, v in var.volumes :
       local.volume_is_rw[name]
-      if v.attach_iam_policy && (
-        try(v.efs.kms_key_arn, null) == kms_arn ||
-        try(v.s3files.kms_key_arn, null) == kms_arn
-      )
+      if try(v.efs.kms_key_arn, null) == kms_arn ||
+      try(v.s3files.kms_key_arn, null) == kms_arn
     ])
   }
 
   volume_policy_has_statements = length(local.volume_efs_statements) + length(local.volume_s3files_statements) + length(local.volume_kms_rw_by_key) > 0
+
+  # Whether the module should actually attach `aws_iam_role_policy.task_volumes`
+  # inline to the task role. True iff any volume that *would* contribute
+  # statements also has `attach_iam_policy = true`. When every contributing
+  # volume opts out, the JSON is still computed (and exposed via the output)
+  # but no role policy resource is created.
+  volume_policy_should_attach = anytrue([
+    for name, v in var.volumes :
+    v.attach_iam_policy && (
+      (v.type == "efs" && try(v.efs.authorization_config.iam, false)) ||
+      v.type == "s3files"
+    )
+  ])
 }
 
 data "aws_iam_policy_document" "task_volumes" {
@@ -180,7 +198,7 @@ data "aws_iam_policy_document" "task_volumes" {
 }
 
 resource "aws_iam_role_policy" "task_volumes" {
-  count = local.volume_policy_has_statements ? 1 : 0
+  count = local.volume_policy_should_attach ? 1 : 0
 
   name   = join("-", [module.label.id, "volumes"])
   role   = try(aws_iam_role.task[0].name, var.task_role.name)
