@@ -94,6 +94,12 @@ variable "container_definitions" {
       name          = optional(string)
     })))
 
+    mount_points = optional(list(object({
+      sourceVolume  = string
+      containerPath = string
+      readOnly      = optional(bool, false)
+    })))
+
     healthcheck = optional(object({
       command     = list(string)
       interval    = optional(number)
@@ -130,6 +136,81 @@ variable "container_definitions" {
     stop_timeout  = optional(number)
   }))
   description = "List of container definitions, accepts the inputs of the module https://github.com/cloudposse/terraform-aws-ecs-container-definition"
+}
+
+variable "volumes" {
+  type = map(object({
+    # Volume type discriminator. Picks which sub-block is consumed and,
+    # for `efs` / `s3files`, shapes the auto-attached task-role IAM
+    # policy (see `attach_iam_policy`).
+    type = string
+
+    # When true (default), the module computes a least-privilege task
+    # role IAM policy from the declared volumes and attaches it inline.
+    # No-op for `ephemeral` (no IAM needed) and for `efs` with
+    # `authorization_config.iam = false` (no IAM credentials are used
+    # for the mount, only POSIX + network). Flip to false to manage IAM
+    # yourself; the computed JSON stays available via the
+    # `volume_iam_policy_json` output.
+    attach_iam_policy = optional(bool, true)
+
+    efs = optional(object({
+      file_system_id = string
+      root_directory = optional(string)
+      # Transit encryption is always ENABLED on the rendered EFS volume
+      # — no opt-out. The clinical-data posture of services consuming
+      # this module makes plaintext NFS a non-starter. The
+      # `transit_encryption_port` field lets you customise the encrypted
+      # channel's port if needed.
+      transit_encryption_port = optional(number)
+      # Set when the backing file system is encrypted with a customer
+      # managed KMS key. Used to scope the auto-attached KMS statements;
+      # leave null for SSE-S3-equivalent default encryption.
+      kms_key_arn = optional(string)
+      # Authorization config is always emitted on the rendered EFS
+      # volume so the secure-by-default `iam = true` actually applies
+      # when the consumer doesn't set the block — hence the `{}`
+      # default instead of `null`.
+      authorization_config = optional(object({
+        access_point_id = optional(string)
+        # EFS IAM authorization. Default true is more secure than the
+        # AWS provider default — task role identity is required at mount
+        # time, beyond network + POSIX. Set false for legacy mounts that
+        # rely on security groups + POSIX only.
+        iam = optional(bool, true)
+      }), {})
+    }))
+
+    s3files = optional(object({
+      # ARN of the Mountpoint-for-S3 access point. The S3 Files mount
+      # uses the access point to scope the bucket prefix the task sees.
+      access_point_arn = string
+      # ARN of the S3 Files file system (backed by the bucket).
+      file_system_arn         = string
+      root_directory          = optional(string)
+      transit_encryption_port = optional(number)
+      kms_key_arn             = optional(string)
+    }))
+  }))
+  default     = {}
+  description = "Map of task definition volumes, keyed by volume name. Each entry picks a `type` (`ephemeral`, `efs`, or `s3files`) and provides the matching configuration. Containers reference these volumes by name via `container_definitions[*].mount_points[*].sourceVolume`. See `docs/volumes.md` for guidance on choosing a type and configuring it."
+
+  validation {
+    condition = alltrue([
+      for v in values(var.volumes) : contains(["ephemeral", "efs", "s3files"], v.type)
+    ])
+    error_message = "Each volume's `type` must be one of: ephemeral, efs, s3files."
+  }
+
+  validation {
+    condition = alltrue([
+      for v in values(var.volumes) :
+      (v.type == "ephemeral" && v.efs == null && v.s3files == null) ||
+      (v.type == "efs" && v.efs != null && v.s3files == null) ||
+      (v.type == "s3files" && v.s3files != null && v.efs == null)
+    ])
+    error_message = "Each volume must have a configuration block matching its `type` and only that block. type=ephemeral expects neither efs nor s3files; type=efs expects only the efs block; type=s3files expects only the s3files block."
+  }
 }
 
 variable "task_role" {

@@ -20,6 +20,7 @@ module "container_definitions" {
   container_memory_reservation = contains(keys(local.container_definitions[count.index]), "memory_reservation") ? local.container_definitions[count.index].memory_reservation : null
 
   port_mappings     = contains(keys(local.container_definitions[count.index]), "port_mappings") ? local.container_definitions[count.index].port_mappings : null
+  mount_points      = contains(keys(local.container_definitions[count.index]), "mount_points") ? local.container_definitions[count.index].mount_points : null
   healthcheck       = contains(keys(local.container_definitions[count.index]), "healthcheck") ? local.container_definitions[count.index].healthcheck : null
   log_configuration = contains(keys(local.container_definitions[count.index]), "log_configuration") ? local.container_definitions[count.index].log_configuration : null
 
