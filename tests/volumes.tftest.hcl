@@ -128,7 +128,13 @@ run "efs_volume_with_iam_auth_off_renders_block_but_no_policy" {
       data = {
         type = "efs"
         efs = {
-          file_system_id       = "fs-12345678"
+          file_system_id = "fs-12345678"
+          # KMS key on a POSIX-only EFS volume should NOT contribute
+          # KMS statements to the task-role policy — the task role
+          # isn't used for the mount, so granting kms:Decrypt etc. on
+          # it is over-broad. The full policy doc should stay null
+          # and no inline policy should be created.
+          kms_key_arn          = "arn:aws:kms:eu-west-2:123456789012:key/abcd1234-ef56-7890-abcd-ef1234567890"
           authorization_config = { iam = false }
         }
       }
@@ -143,6 +149,16 @@ run "efs_volume_with_iam_auth_off_renders_block_but_no_policy" {
   assert {
     condition     = length(aws_iam_role_policy.task_volumes) == 0
     error_message = "POSIX-only EFS mount (iam = false) needs no IAM policy"
+  }
+
+  # Regression for the KMS over-grant: a POSIX-only EFS volume with a
+  # `kms_key_arn` must NOT cause the full policy document to
+  # materialise. If this asserts a count of 1, the KMS aggregation has
+  # re-acquired the bug where POSIX-only EFS leaks KMS perms into the
+  # `volume_iam_policy_json` output.
+  assert {
+    condition     = length(data.aws_iam_policy_document.task_volumes) == 0
+    error_message = "POSIX-only EFS with kms_key_arn must contribute nothing to the IAM policy document"
   }
 }
 

@@ -134,40 +134,55 @@ locals {
 
   # KMS keys grouped by ARN with the per-key RW signal aggregated
   # across volumes that reference them. Two parallel maps:
-  # `volume_kms_rw_by_key` (full — for the output) covers every volume;
-  # `volume_kms_rw_by_key_attached` (for the inline policy) covers only
-  # volumes with `attach_iam_policy = true`. A key is RW iff any
-  # contributing volume mounting it is RW.
+  # `volume_kms_rw_by_key` (full — for the output) covers every volume
+  # that *actually contributes IAM*; `volume_kms_rw_by_key_attached`
+  # (for the inline policy) further restricts to volumes with
+  # `attach_iam_policy = true`. A key is RW iff any contributing
+  # volume mounting it is RW.
+  #
+  # EFS contributes its `kms_key_arn` only when `authorization_config.iam = true`.
+  # POSIX-only EFS volumes don't authenticate the mount via the task
+  # role, so granting KMS on the task role for that volume is
+  # over-broad — and inconsistent with the rest of the policy
+  # computation, which already excludes those volumes from the EFS
+  # statement list. S3 Files volumes always use IAM, so their
+  # `kms_key_arn` always contributes.
   volume_kms_rw_by_key = {
     for kms_arn in distinct(flatten([
       for v in values(var.volumes) :
-      compact([
-        try(v.efs.kms_key_arn, null),
-        try(v.s3files.kms_key_arn, null),
-      ])
+      concat(
+        (v.type == "efs" && try(v.efs.authorization_config.iam, false))
+        ? compact([try(v.efs.kms_key_arn, null)]) : [],
+        v.type == "s3files"
+        ? compact([try(v.s3files.kms_key_arn, null)]) : [],
+      )
     ])) :
     kms_arn => anytrue([
       for name, v in var.volumes :
       local.volume_is_rw[name]
-      if try(v.efs.kms_key_arn, null) == kms_arn ||
-      try(v.s3files.kms_key_arn, null) == kms_arn
+      if(
+        (v.type == "efs" && try(v.efs.authorization_config.iam, false) && try(v.efs.kms_key_arn, null) == kms_arn) ||
+        (v.type == "s3files" && try(v.s3files.kms_key_arn, null) == kms_arn)
+      )
     ])
   }
 
   volume_kms_rw_by_key_attached = {
     for kms_arn in distinct(flatten([
       for v in values(var.volumes) :
-      v.attach_iam_policy ? compact([
-        try(v.efs.kms_key_arn, null),
-        try(v.s3files.kms_key_arn, null),
-      ]) : []
+      v.attach_iam_policy ? concat(
+        (v.type == "efs" && try(v.efs.authorization_config.iam, false))
+        ? compact([try(v.efs.kms_key_arn, null)]) : [],
+        v.type == "s3files"
+        ? compact([try(v.s3files.kms_key_arn, null)]) : [],
+      ) : []
     ])) :
     kms_arn => anytrue([
       for name, v in var.volumes :
       local.volume_is_rw[name]
       if v.attach_iam_policy && (
-        try(v.efs.kms_key_arn, null) == kms_arn ||
-        try(v.s3files.kms_key_arn, null) == kms_arn
+        (v.type == "efs" && try(v.efs.authorization_config.iam, false) && try(v.efs.kms_key_arn, null) == kms_arn) ||
+        (v.type == "s3files" && try(v.s3files.kms_key_arn, null) == kms_arn)
       )
     ])
   }
