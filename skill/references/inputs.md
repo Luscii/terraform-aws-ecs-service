@@ -9,6 +9,7 @@ All input variables for the `terraform-aws-ecs-service` module.
 - [Context and Naming](#context-and-naming)
 - [IAM Roles](#iam-roles)
 - [Container Configuration](#container-configuration)
+- [Volumes](#volumes)
 - [Service Discovery / Connectivity](#service-discovery--connectivity)
 - [Security Groups](#security-groups)
 - [Load Balancers](#load-balancers)
@@ -81,6 +82,14 @@ When providing your own roles, the module still attaches policies by role name:
 | `container_definitions` | `list(object)` | *required* | Container definitions. See [container-definitions.md](container-definitions.md) |
 | `add_xray_container` | `bool` | `true` | Add X-Ray daemon sidecar (128 CPU, 256 MiB, port 2000/UDP) |
 | `xray_container_image` | `string` | `"amazon/aws-xray-daemon:3.x"` | X-Ray daemon image |
+
+## Volumes
+
+| Variable | Type | Default | Description |
+|----------|------|---------|-------------|
+| `volumes` | `map(object)` | `{}` | Task definition volumes, keyed by name. Each entry picks a `type` (`ephemeral` / `efs` / `s3files`) plus a matching sub-block. See [volumes.md](volumes.md) for the full schema, IAM grant matrix, and validation rules; see [../../docs/volumes.md](../../docs/volumes.md) for the decision guide. |
+
+Containers consume declared volumes via the new `mount_points` field on `container_definitions[*]` — see [container-definitions.md](container-definitions.md#mount-points). A `sourceVolume` that doesn't reference a declared `var.volumes` key fails plan at the task definition's precondition.
 
 ## Service Discovery / Connectivity
 
