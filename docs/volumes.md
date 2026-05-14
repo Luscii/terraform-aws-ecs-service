@@ -5,7 +5,7 @@ opinionated, developer-friendly variable. It supports every volume
 type that Fargate on Linux actually supports, and wires the matching
 task-role IAM permissions for you by default.
 
-Grounding:
+References:
 
 - AWS — [Storage options for Amazon ECS tasks](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/using_data_volumes.html)
 - AWS — [Use Amazon EFS volumes with Amazon ECS](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/efs-volumes.html)
