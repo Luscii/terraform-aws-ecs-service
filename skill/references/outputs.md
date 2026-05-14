@@ -53,6 +53,12 @@ These return the module-created role or the user-provided role, whichever applie
 | `security_group_id` | `string` | `aws_security_group.this.id` | Security group ID |
 | `security_group_arn` | `string` | `aws_security_group.this.arn` | Security group ARN |
 
+### Volume IAM Policy
+
+| Output | Type | Value Expression | Description |
+|--------|------|-----------------|-------------|
+| `volume_iam_policy_json` | `string` or `null` | `try(data.aws_iam_policy_document.task_volumes[0].json, null)` | Least-privilege IAM policy document the module computes from `var.volumes`. Already attached to the task role inline by default. `null` when no volume contributes statements (ephemeral-only, `attach_iam_policy = false` everywhere, EFS without IAM auth). Useful for opt-out consumers or those on bring-your-own task roles. See [volumes.md](volumes.md#opting-out-per-volume) for the opt-out recipe. |
+
 ### Service Discovery
 
 | Output | Type | Value Expression | Description |
