@@ -41,7 +41,7 @@ module "execution_role_label" {
   version = "0.25.0"
 
   context     = module.label.context
-  attributes  = concat(module.label.attributes, ["execution"])
+  attributes  = ["execution"]
   label_order = local.role_label_order
 }
 
@@ -50,7 +50,7 @@ module "task_role_label" {
   version = "0.25.0"
 
   context     = module.label.context
-  attributes  = concat(module.label.attributes, ["task"])
+  attributes  = ["task"]
   label_order = local.role_label_order
 }
 
