@@ -85,7 +85,13 @@ locals {
   # policy never grants permissions for volumes whose owners opted out.
   volume_efs_statements = [
     for name, v in var.volumes : {
-      sid       = "EfsClient${replace(name, "/[^A-Za-z0-9]/", "")}"
+      # `replace(name, "/[^A-Za-z0-9]/", "")` strips characters IAM SIDs
+      # don't allow (only A-Za-z0-9 are valid) but collides for distinct
+      # map keys that differ only by stripped chars — `data-1` and
+      # `data_1` both render as `data1`. The 8-char SHA1 suffix
+      # preserves the uniqueness the map key guarantees while keeping
+      # the sanitized name as a readable prefix for debugging.
+      sid       = "EfsClient${replace(name, "/[^A-Za-z0-9]/", "")}${substr(sha1(name), 0, 8)}"
       file_arn  = "arn:aws:elasticfilesystem:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:file-system/${v.efs.file_system_id}"
       ap_id     = try(v.efs.authorization_config.access_point_id, null)
       access_pt = try(v.efs.authorization_config.access_point_id, null) == null ? null : "arn:aws:elasticfilesystem:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:access-point/${v.efs.authorization_config.access_point_id}"
@@ -114,13 +120,13 @@ locals {
   volume_s3files_statements = flatten([
     for name, v in var.volumes : [
       {
-        sid       = "S3FilesList${replace(name, "/[^A-Za-z0-9]/", "")}"
+        sid       = "S3FilesList${replace(name, "/[^A-Za-z0-9]/", "")}${substr(sha1(name), 0, 8)}"
         actions   = ["s3:ListBucket"]
         resources = [v.s3files.access_point_arn]
         attach    = v.attach_iam_policy
       },
       {
-        sid = "S3FilesObjects${replace(name, "/[^A-Za-z0-9]/", "")}"
+        sid = "S3FilesObjects${replace(name, "/[^A-Za-z0-9]/", "")}${substr(sha1(name), 0, 8)}"
         actions = concat(
           ["s3:GetObject"],
           local.volume_is_rw[name] ? ["s3:PutObject", "s3:DeleteObject"] : [],
@@ -243,7 +249,7 @@ data "aws_iam_policy_document" "task_volumes" {
   dynamic "statement" {
     for_each = local.volume_kms_rw_by_key
     content {
-      sid    = "Kms${replace(statement.key, "/[^A-Za-z0-9]/", "")}"
+      sid    = "Kms${replace(statement.key, "/[^A-Za-z0-9]/", "")}${substr(sha1(statement.key), 0, 8)}"
       effect = "Allow"
       actions = concat(
         ["kms:Decrypt"],
@@ -289,7 +295,7 @@ data "aws_iam_policy_document" "task_volumes_attached" {
   dynamic "statement" {
     for_each = local.volume_kms_rw_by_key_attached
     content {
-      sid    = "Kms${replace(statement.key, "/[^A-Za-z0-9]/", "")}"
+      sid    = "Kms${replace(statement.key, "/[^A-Za-z0-9]/", "")}${substr(sha1(statement.key), 0, 8)}"
       effect = "Allow"
       actions = concat(
         ["kms:Decrypt"],
