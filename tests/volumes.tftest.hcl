@@ -303,13 +303,59 @@ run "attach_iam_policy_false_skips_policy_resource_but_keeps_computed_doc" {
     error_message = "attach_iam_policy = false must not attach an inline policy"
   }
 
-  # Regression: the computed policy document must stay available via
-  # `volume_iam_policy_json` even when every volume opts out — that's
-  # the whole point of the opt-out path (consumer attaches the JSON
-  # themselves to a role we don't own).
+  # Regression: the computed policy document (full) must stay available
+  # via `volume_iam_policy_json` even when every volume opts out —
+  # that's the whole point of the opt-out path (consumer attaches the
+  # JSON themselves to a role we don't own).
   assert {
     condition     = length(data.aws_iam_policy_document.task_volumes) == 1
-    error_message = "attach_iam_policy = false must still compute the policy document so opt-out consumers can attach `volume_iam_policy_json` themselves"
+    error_message = "attach_iam_policy = false must still compute the full policy document so opt-out consumers can attach `volume_iam_policy_json` themselves"
+  }
+
+  # Regression: the *attached* policy document must NOT materialise
+  # when every volume opts out — that's the data source the inline
+  # role policy reads from. No attach flag → no attached doc → no
+  # inline policy.
+  assert {
+    condition     = length(data.aws_iam_policy_document.task_volumes_attached) == 0
+    error_message = "attach_iam_policy = false on every volume must skip the attached policy document"
+  }
+}
+
+run "mixed_attach_iam_policy_attaches_only_opted_in_volumes" {
+  command = plan
+
+  variables {
+    volumes = {
+      shared = {
+        # opted in (default) — should contribute to the attached doc
+        type = "efs"
+        efs  = { file_system_id = "fs-shared" }
+      }
+      private = {
+        # opted out — should NOT contribute to the attached doc, but
+        # MUST stay in the full doc (`volume_iam_policy_json`) so the
+        # consumer can attach it to their own role.
+        type              = "efs"
+        attach_iam_policy = false
+        efs               = { file_system_id = "fs-private" }
+      }
+    }
+  }
+
+  assert {
+    condition     = length(aws_iam_role_policy.task_volumes) == 1
+    error_message = "Mixed config with at least one attach=true volume must produce an inline policy"
+  }
+
+  assert {
+    condition     = length(data.aws_iam_policy_document.task_volumes) == 1
+    error_message = "Full policy document must exist in a mixed config (covers both opted-in and opted-out volumes for the output)"
+  }
+
+  assert {
+    condition     = length(data.aws_iam_policy_document.task_volumes_attached) == 1
+    error_message = "Attached policy document must exist when at least one volume opts in"
   }
 }
 
