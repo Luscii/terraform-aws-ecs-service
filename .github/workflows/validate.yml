@@ -38,6 +38,9 @@ jobs:
       - name: Terraform validate
         id: tf-validate
         run: terraform -chdir=${{inputs.terraform_directory}} validate -no-color
+      - name: Terraform test
+        id: tf-test
+        run: terraform -chdir=${{inputs.terraform_directory}} test -no-color
       - name: Checkov validation
         id: checkov
         uses: bridgecrewio/checkov-action@v12

@@ -94,6 +94,12 @@ variable "container_definitions" {
       name          = optional(string)
     })))
 
+    mount_points = optional(list(object({
+      sourceVolume  = string
+      containerPath = string
+      readOnly      = optional(bool, false)
+    })))
+
     healthcheck = optional(object({
       command     = list(string)
       interval    = optional(number)
@@ -132,6 +138,99 @@ variable "container_definitions" {
   description = "List of container definitions, accepts the inputs of the module https://github.com/cloudposse/terraform-aws-ecs-container-definition"
 }
 
+variable "volumes" {
+  type = map(object({
+    # Volume type discriminator. Picks which sub-block is consumed and,
+    # for `efs` / `s3files`, shapes the auto-attached task-role IAM
+    # policy (see `attach_iam_policy`).
+    type = string
+
+    # When true (default), the module computes a least-privilege task
+    # role IAM policy from the declared volumes and attaches it inline.
+    # No-op for `ephemeral` (no IAM needed) and for `efs` with
+    # `authorization_config.iam = false` (no IAM credentials are used
+    # for the mount, only POSIX + network). Flip to false to manage IAM
+    # yourself; the computed JSON stays available via the
+    # `volume_iam_policy_json` output.
+    attach_iam_policy = optional(bool, true)
+
+    efs = optional(object({
+      file_system_id = string
+      root_directory = optional(string)
+      # Transit encryption is always ENABLED on the rendered EFS volume
+      # — no opt-out. The clinical-data posture of services consuming
+      # this module makes plaintext NFS a non-starter. The
+      # `transit_encryption_port` field lets you customise the encrypted
+      # channel's port if needed.
+      transit_encryption_port = optional(number)
+      # Set when the backing file system is encrypted with a customer
+      # managed KMS key. Used to scope the auto-attached KMS statements;
+      # leave null for SSE-S3-equivalent default encryption.
+      kms_key_arn = optional(string)
+      # Authorization config is always emitted on the rendered EFS
+      # volume so the secure-by-default `iam = true` actually applies
+      # when the consumer doesn't set the block — hence the `{}`
+      # default instead of `null`.
+      authorization_config = optional(object({
+        access_point_id = optional(string)
+        # EFS IAM authorization. Default true is more secure than the
+        # AWS provider default — task role identity is required at mount
+        # time, beyond network + POSIX. Set false for legacy mounts that
+        # rely on security groups + POSIX only.
+        iam = optional(bool, true)
+      }), {})
+    }))
+
+    s3files = optional(object({
+      # ARN of the Mountpoint-for-S3 access point. The S3 Files mount
+      # uses the access point to scope the bucket prefix the task sees.
+      access_point_arn = string
+      # ARN of the S3 Files file system (backed by the bucket).
+      file_system_arn         = string
+      root_directory          = optional(string)
+      transit_encryption_port = optional(number)
+      kms_key_arn             = optional(string)
+    }))
+  }))
+  default     = {}
+  description = "Map of task definition volumes, keyed by volume name. Each entry picks a `type` (`ephemeral`, `efs`, or `s3files`) and provides the matching configuration. Containers reference these volumes by name via `container_definitions[*].mount_points[*].sourceVolume`. See `docs/volumes.md` for guidance on choosing a type and configuring it."
+
+  validation {
+    condition = alltrue([
+      for v in values(var.volumes) : contains(["ephemeral", "efs", "s3files"], v.type)
+    ])
+    error_message = "Each volume's `type` must be one of: ephemeral, efs, s3files."
+  }
+
+  validation {
+    condition = alltrue([
+      for v in values(var.volumes) :
+      (v.type == "ephemeral" && v.efs == null && v.s3files == null) ||
+      (v.type == "efs" && v.efs != null && v.s3files == null) ||
+      (v.type == "s3files" && v.s3files != null && v.efs == null)
+    ])
+    error_message = "Each volume must have a configuration block matching its `type` and only that block. type=ephemeral expects neither efs nor s3files; type=efs expects only the efs block; type=s3files expects only the s3files block."
+  }
+
+  validation {
+    # ECS rejects task definitions where an EFS access point is configured
+    # together with a non-root `root_directory`. The access point already
+    # roots the mount itself, and AWS treats any other root_directory as a
+    # conflict. Fail at plan time with a useful message instead of letting
+    # apply hit the AWS API with a confusing registration error.
+    # See https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_EFSVolumeConfiguration.html
+    condition = alltrue([
+      for v in values(var.volumes) :
+      v.type != "efs" ? true : (
+        try(v.efs.authorization_config.access_point_id, null) == null ? true : (
+          try(v.efs.root_directory, null) == null || try(v.efs.root_directory, "") == "/"
+        )
+      )
+    ])
+    error_message = "When an EFS volume has `authorization_config.access_point_id` set, `root_directory` must be omitted or set to \"/\" — access points root-scope the mount themselves. ECS rejects the task definition at registration otherwise."
+  }
+}
+
 variable "task_role" {
   type = object({
     name = string
@@ -147,6 +246,21 @@ variable "execution_role" {
     arn  = string
   })
   description = "IAM Role used as the execution role, leave empty to create a new role"
+  default     = null
+}
+
+variable "iam_role_path" {
+  type = object({
+    service_prefix = optional(string, "services")
+    service_name   = string
+  })
+  description = "When set, places the module-created task and execution roles at IAM path `/<service_prefix>/<service_name>/` and drops the `namespace` segment from the role name (the path already encodes the parent scope). Resulting name shape: `<environment>-<stage>-<name>-<roletype>`, e.g. `eu-tst-nhs-mesh-execution`. Required by deploy roles that scope `iam:CreateRole` resources by path. When null, roles keep the full cloudposse-label-prefixed names at the default IAM path. Ignored when task_role/execution_role are supplied."
+  default     = null
+}
+
+variable "iam_role_permissions_boundary" {
+  type        = string
+  description = "ARN of the IAM permissions boundary attached to the task and execution roles when the module creates them (ignored when task_role/execution_role are supplied). Required by deploy roles that gate iam:CreateRole with an iam:PermissionsBoundary condition."
   default     = null
 }
 
@@ -329,18 +443,40 @@ variable "scaling_scheduled" {
 
 variable "scaling_target" {
   type = map(object({
-    predefined_metric_type = string
-    resource_label         = optional(string)
-    target_value           = number
-    scale_in_cooldown      = optional(number, 300)
-    scale_out_cooldown     = optional(number, 300)
+    predefined_metric_type = optional(string)
+    customized_metric_specification = optional(object({
+      metric_name = string
+      namespace   = string
+      statistic   = string
+      unit        = optional(string)
+      dimensions = optional(list(object({
+        name  = string
+        value = string
+      })))
+    }))
+    resource_label     = optional(string)
+    target_value       = number
+    scale_in_cooldown  = optional(number, 300)
+    scale_out_cooldown = optional(number, 300)
   }))
-  description = "Target tracking scaling policies for the service. Enables Target tracking scaling. Predefined metric type must be one of ECSServiceAverageCPUUtilization, ALBRequestCountPerTarget or ECSServiceAverageMemoryUtilization - https://docs.aws.amazon.com/autoscaling/application/APIReference/API_PredefinedMetricSpecification.html"
+  description = <<-EOT
+    Target tracking scaling policies for the service. Each policy must set exactly one of
+    `predefined_metric_type` or `customized_metric_specification`.
+
+    When using `predefined_metric_type`, the allowed values are
+    `ECSServiceAverageCPUUtilization`, `ALBRequestCountPerTarget`, and
+    `ECSServiceAverageMemoryUtilization`. When `predefined_metric_type` is
+    `ALBRequestCountPerTarget`, `resource_label` must also be set.
+
+    AWS documentation:
+    - Predefined metrics: https://docs.aws.amazon.com/autoscaling/application/APIReference/API_PredefinedMetricSpecification.html
+    - Customized metrics: https://docs.aws.amazon.com/autoscaling/application/APIReference/API_CustomizedMetricSpecification.html
+  EOT
   default     = null
 
   validation {
-    condition     = var.scaling_target == null ? true : alltrue([for policy in var.scaling_target : contains(["ECSServiceAverageCPUUtilization", "ALBRequestCountPerTarget", "ECSServiceAverageMemoryUtilization"], policy.predefined_metric_type)])
-    error_message = "Predefined metric type should be one of ECSServiceAverageCPUUtilization or ECSServiceAverageMemoryUtilization"
+    condition     = var.scaling_target == null ? true : alltrue([for policy in var.scaling_target : policy.predefined_metric_type == null ? true : contains(["ECSServiceAverageCPUUtilization", "ALBRequestCountPerTarget", "ECSServiceAverageMemoryUtilization"], policy.predefined_metric_type)])
+    error_message = "When set, predefined_metric_type must be one of ECSServiceAverageCPUUtilization, ALBRequestCountPerTarget, or ECSServiceAverageMemoryUtilization"
   }
 
   validation {
@@ -353,6 +489,28 @@ variable "scaling_target" {
       )
     ])
     error_message = "When predefined metric type is ALBRequestCountPerTarget, resource_label must be set and following the format defined on https://docs.aws.amazon.com/autoscaling/ec2/APIReference/API_PredefinedMetricSpecification.html"
+  }
+
+  validation {
+    condition = var.scaling_target == null ? true : alltrue([
+      for policy in var.scaling_target : policy.predefined_metric_type != null || policy.customized_metric_specification != null
+    ])
+    error_message = "Either predefined_metric_type or customized_metric_specification must be set"
+  }
+
+  validation {
+    condition = var.scaling_target == null ? true : alltrue([
+      for policy in var.scaling_target : !(policy.predefined_metric_type != null && policy.customized_metric_specification != null)
+    ])
+    error_message = "predefined_metric_type and customized_metric_specification cannot be both set"
+  }
+
+  validation {
+    condition = var.scaling_target == null ? true : alltrue([
+      for policy in var.scaling_target :
+      policy.customized_metric_specification == null ? true : contains(["Average", "Minimum", "Maximum", "SampleCount", "Sum"], policy.customized_metric_specification.statistic)
+    ])
+    error_message = "customized_metric_specification.statistic must be one of Average, Minimum, Maximum, SampleCount, or Sum"
   }
 }
 
