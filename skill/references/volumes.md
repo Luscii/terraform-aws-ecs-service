@@ -185,10 +185,8 @@ when at least one volume contributes statements, omitted otherwise.
 | `efs`, `iam = true`, RO | `elasticfilesystem:ClientMount` | file-system ARN | `AccessPointArn` when set |
 | `efs`, `iam = true`, RW, with access point | `+ClientWrite` | file-system ARN | `AccessPointArn` |
 | `efs`, `iam = true`, RW, no access point | `+ClientWrite`, `+ClientRootAccess` | file-system ARN | — |
-| `s3files`, RO | `s3:ListBucket` | access point ARN | — |
-| `s3files`, RO | `s3:GetObject` | `${access_point_arn}/object/*` | — |
-| `s3files`, RW | `s3:ListBucket` | access point ARN | — |
-| `s3files`, RW | `s3:GetObject`, `+s3:PutObject`, `+s3:DeleteObject` | `${access_point_arn}/object/*` | — |
+| `s3files`, RO | `s3files:ClientMount` | access point ARN | — |
+| `s3files`, RW | `s3files:ClientMount`, `+s3files:ClientWrite` | access point ARN | — |
 | Any with `kms_key_arn`, RO | `kms:Decrypt` | KMS key ARN | — |
 | Any with `kms_key_arn`, RW | `+kms:Encrypt`, `+kms:GenerateDataKey` | KMS key ARN | — |
 

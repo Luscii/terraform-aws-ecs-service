@@ -109,34 +109,28 @@ locals {
     if v.type == "efs" && try(v.efs.authorization_config.iam, false)
   ]
 
-  # S3 Files statement specs. Two per s3files volume — the bucket-level
-  # `s3:ListBucket` and the object-level `s3:GetObject`/`PutObject`/
-  # `DeleteObject` — because the two action sets need different
-  # resource ARNs. AWS access points scope bucket-level actions to the
-  # access point ARN itself, but object-level actions require the
-  # `<access-point-arn>/object/*` form. Granting `s3:GetObject` on the
-  # bare access point ARN silently grants nothing at runtime.
+  # S3 Files statement specs. One per s3files volume — the
+  # `s3files:Client*` mount-auth actions on the access point ARN.
+  # Structurally a sibling of `volume_efs_statements`: single statement,
+  # file-system-level resource (no object-level sub-resource).
+  #
+  # The action set mirrors the AWS-managed
+  # `AmazonS3FilesClientReadWriteAccess` policy
+  # (`ClientMount` + `ClientWrite`); the resource is tighter (the
+  # access point ARN, not `*`).
   # See the `attach` note on `volume_efs_statements`.
-  volume_s3files_statements = flatten([
-    for name, v in var.volumes : [
-      {
-        sid       = "S3FilesList${replace(name, "/[^A-Za-z0-9]/", "")}${substr(sha1(name), 0, 8)}"
-        actions   = ["s3:ListBucket"]
-        resources = [v.s3files.access_point_arn]
-        attach    = v.attach_iam_policy
-      },
-      {
-        sid = "S3FilesObjects${replace(name, "/[^A-Za-z0-9]/", "")}${substr(sha1(name), 0, 8)}"
-        actions = concat(
-          ["s3:GetObject"],
-          local.volume_is_rw[name] ? ["s3:PutObject", "s3:DeleteObject"] : [],
-        )
-        resources = ["${v.s3files.access_point_arn}/object/*"]
-        attach    = v.attach_iam_policy
-      }
-    ]
+  volume_s3files_statements = [
+    for name, v in var.volumes : {
+      sid = "S3FilesClient${replace(name, "/[^A-Za-z0-9]/", "")}${substr(sha1(name), 0, 8)}"
+      actions = concat(
+        ["s3files:ClientMount"],
+        local.volume_is_rw[name] ? ["s3files:ClientWrite"] : [],
+      )
+      resources = [v.s3files.access_point_arn]
+      attach    = v.attach_iam_policy
+    }
     if v.type == "s3files"
-  ])
+  ]
 
   # KMS keys grouped by ARN with the per-key RW signal aggregated
   # across volumes that reference them. Two parallel maps:
