@@ -372,7 +372,7 @@ variable "ingress_rules" {
     security_groups  = optional(list(string))
     self             = optional(bool)
   }))
-  description = "Ingress rules for the default security group for the service"
+  description = " Deprecated: Use aws_security_group_ingress_rule instead. Ingress rules for the default security group for the service."
   default     = []
 }
 
@@ -389,7 +389,7 @@ variable "egress_rules" {
     security_groups  = optional(list(string))
     self             = optional(bool)
   }))
-  description = "Egress rules for the default security group for the service"
+  description = "Deprecated: Use aws_security_group_egress_rule instead. Egress rules for the default security group for the service."
   default     = []
 }
 
