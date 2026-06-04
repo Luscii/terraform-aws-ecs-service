@@ -27,10 +27,19 @@ resource "aws_ecs_service" "this" {
 
   cluster          = data.aws_ecs_cluster.this.arn
   task_definition  = aws_ecs_task_definition.this.arn
-  launch_type      = "FARGATE"
-  platform_version = var.platform_version
+  launch_type      = length(var.capacity_provider_strategy) > 0 ? null : "FARGATE"
+  platform_version = length(var.capacity_provider_strategy) > 0 ? null : var.platform_version
 
   enable_execute_command = var.enable_ecs_execute_command
+
+  dynamic "capacity_provider_strategy" {
+    for_each = var.capacity_provider_strategy
+    content {
+      capacity_provider = capacity_provider_strategy.value.capacity_provider
+      weight            = capacity_provider_strategy.value.weight
+      base              = capacity_provider_strategy.value.base
+    }
+  }
 
   desired_count                      = var.desired_count
   force_new_deployment               = var.force_new_deployment

@@ -514,6 +514,16 @@ variable "scaling_target" {
   }
 }
 
+variable "capacity_provider_strategy" {
+  type = list(object({
+    capacity_provider = string
+    weight            = number
+    base              = optional(number, 0)
+  }))
+  description = "Capacity provider strategy for the ECS service. When set, overrides launch_type."
+  default     = []
+}
+
 variable "add_xray_container" {
   type        = bool
   description = "Whether to add the xray daemon container to the task definition"
