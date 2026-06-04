@@ -28,7 +28,7 @@ resource "aws_ecs_service" "this" {
   cluster          = data.aws_ecs_cluster.this.arn
   task_definition  = aws_ecs_task_definition.this.arn
   launch_type      = var.launch_type
-  platform_version = var.platform_version
+  platform_version = var.launch_type == "FARGATE" ? var.platform_version : null
 
   enable_execute_command = var.enable_ecs_execute_command
 
