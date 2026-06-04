@@ -537,10 +537,10 @@ variable "xray_container_image" {
 variable "launch_type" {
   type        = string
   description = "The launch type on which to run your service. Valid values are EC2, FARGATE and EXTERNAL."
-  default     = null
+  default     = "FARGATE"
 
   validation {
-    condition     = var.launch_type == null || contains(["EC2", "FARGATE", "EXTERNAL"], var.launch_type)
+    condition     = var.launch_type == null ? true : contains(["EC2", "FARGATE", "EXTERNAL"], var.launch_type)
     error_message = "Valid launch_type values are EC2, FARGATE and EXTERNAL."
   }
 }
