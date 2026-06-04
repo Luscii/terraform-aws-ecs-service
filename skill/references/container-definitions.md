@@ -8,6 +8,7 @@ Full schema for the `container_definitions` input variable.
 - [Required Fields](#required-fields)
 - [Resource Fields](#resource-fields)
 - [Port Mappings](#port-mappings)
+- [Mount Points](#mount-points)
 - [Health Check](#health-check)
 - [Environment and Secrets](#environment-and-secrets)
 - [Logging](#logging)
@@ -46,6 +47,13 @@ container_definitions = list(object({
     containerPort = number
     protocol      = optional(string, "tcp")
     name          = optional(string)
+  })))
+
+  # Storage — references entries declared in var.volumes
+  mount_points = optional(list(object({
+    sourceVolume  = string
+    containerPath = string
+    readOnly      = optional(bool, false)
   })))
 
   # Health
@@ -120,6 +128,26 @@ port_mappings = [
 ```
 
 **Important:** The `name` field is required when using Service Connect. The `service_connect_configuration.port_name` must match one of these names. The module validates this at plan time.
+
+## Mount Points
+
+```hcl
+mount_points = [
+  { sourceVolume = "patient_data", containerPath = "/var/data" },                       # default: read-write
+  { sourceVolume = "scratch",      containerPath = "/tmp/work",   readOnly = true },
+]
+```
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `sourceVolume` | `string` | *required* | Name of a volume declared in `var.volumes`. Validated by the task definition's precondition — a typo here fails plan with the declared volumes listed. |
+| `containerPath` | `string` | *required* | Absolute filesystem path inside the container where the volume mounts. |
+| `readOnly` | `bool` | `false` | Mount read-only. Aggregated across all mounts of the same volume to derive the IAM grants the module attaches (any RW mount makes the whole volume RW from an IAM perspective). |
+
+CamelCase keys to match the rest of the ECS-JSON container surface
+(`port_mappings`, `log_configuration`). Volume declaration shape and
+the IAM auto-attach behaviour live in [volumes.md](volumes.md) (and
+the prose guide at [../../docs/volumes.md](../../docs/volumes.md)).
 
 ## Health Check
 

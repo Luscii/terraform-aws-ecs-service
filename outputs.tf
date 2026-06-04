@@ -93,6 +93,11 @@ output "service_discovery_internal_url" {
   description = "Base URL for the service internally"
 }
 
+output "volume_iam_policy_json" {
+  value       = try(data.aws_iam_policy_document.task_volumes[0].json, null)
+  description = "The full least-privilege IAM policy document (JSON) the module computes for the declared `volumes`, covering every contributing volume regardless of `attach_iam_policy`. The module's inline `aws_iam_role_policy.task_volumes` attaches a filtered subset (volumes with `attach_iam_policy = true` only); this output stays the full document so opt-out consumers can attach the JSON to their own role. Null only when no volume contributes statements (ephemeral-only, or EFS without IAM auth)."
+}
+
 output "security_group_id" {
   value       = aws_security_group.this.id
   description = "The ID of the security group"

@@ -27,9 +27,59 @@ resource "aws_ecs_task_definition" "this" {
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
 
+  dynamic "volume" {
+    for_each = var.volumes
+    content {
+      name = volume.key
+
+      dynamic "efs_volume_configuration" {
+        for_each = volume.value.efs == null ? [] : [volume.value.efs]
+        content {
+          file_system_id          = efs_volume_configuration.value.file_system_id
+          root_directory          = efs_volume_configuration.value.root_directory
+          transit_encryption      = "ENABLED"
+          transit_encryption_port = efs_volume_configuration.value.transit_encryption_port
+
+          # Always emit authorization_config so the secure-by-default
+          # `iam = ENABLED` applies even when the consumer didn't set
+          # the block — the variable's `{}` default fills in both
+          # `access_point_id = null` and `iam = true`.
+          authorization_config {
+            access_point_id = efs_volume_configuration.value.authorization_config.access_point_id
+            iam             = efs_volume_configuration.value.authorization_config.iam ? "ENABLED" : "DISABLED"
+          }
+        }
+      }
+
+      dynamic "s3files_volume_configuration" {
+        for_each = volume.value.s3files == null ? [] : [volume.value.s3files]
+        content {
+          access_point_arn        = s3files_volume_configuration.value.access_point_arn
+          file_system_arn         = s3files_volume_configuration.value.file_system_arn
+          root_directory          = s3files_volume_configuration.value.root_directory
+          transit_encryption_port = s3files_volume_configuration.value.transit_encryption_port
+        }
+      }
+    }
+  }
+
   tags = local.task_definition_tags
 
   lifecycle {
+    # Every container `mount_points[*].sourceVolume` must reference a
+    # declared key in `var.volumes`. This crosses two variables, so it
+    # can't live in a `validation` block (those see only their own
+    # variable) — keep it on the resource that consumes both.
+    precondition {
+      condition = alltrue(flatten([
+        for c in var.container_definitions : [
+          for m in coalesce(c.mount_points, []) :
+          contains(keys(var.volumes), m.sourceVolume)
+        ]
+      ]))
+      error_message = "Every container `mount_points[*].sourceVolume` must reference a key declared in `var.volumes`. Declared volumes: ${length(var.volumes) == 0 ? "(none)" : join(", ", keys(var.volumes))}."
+    }
+
     precondition {
       condition     = var.task_cpu >= local.required_cpu
       error_message = "task_cpu must be greater than the sum of CPU (${nonsensitive(local.required_cpu)}) for all containers in the task definition, including envoy (256 or 512)"

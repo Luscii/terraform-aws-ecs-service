@@ -14,6 +14,8 @@ jobs:
     with:
       type: latest
       ref: ${{ github.event.release.tag_name }}
+    secrets:
+      DX_BEARER_TOKEN: ${{ secrets.DX_BEARER_TOKEN }}
 
   link-release:
     runs-on: ubuntu-latest

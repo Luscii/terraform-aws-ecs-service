@@ -74,9 +74,10 @@ Progress:
 - [ ] Step 2: Configure containers
 - [ ] Step 3: Choose connectivity pattern
 - [ ] Step 4: Configure security groups
-- [ ] Step 5: Set up scaling (if needed)
-- [ ] Step 6: Wire up outputs
-- [ ] Step 7: Validate configuration
+- [ ] Step 5: Configure volumes (if needed)
+- [ ] Step 6: Set up scaling (if needed)
+- [ ] Step 7: Wire up outputs
+- [ ] Step 8: Validate configuration
 ```
 
 ### Step 1: Define Service Basics
@@ -189,7 +190,74 @@ The module creates a security group with self-referencing ingress. Add rules:
   security_group_ids = [aws_security_group.shared.id]  # Additional SGs
 ```
 
-### Step 5: Set Up Scaling (If Needed)
+### Step 5: Configure Volumes (If Needed)
+
+The module supports every volume type that Fargate on Linux supports:
+ephemeral (in-task scratch), Amazon EFS, and Amazon S3 Files. Default
+is `var.volumes = {}` — skip this step if your service doesn't need
+mounted storage.
+
+**Decision shortcuts (full guide at [../docs/volumes.md](../docs/volumes.md)):**
+
+- **Scratch dir shared between containers in the same task** → `type = "ephemeral"`. No external resource, no IAM.
+- **Persistent shared filesystem across many tasks** (patient data, content cache) → `type = "efs"`.
+- **Expose an S3 bucket as a filesystem to the container** → `type = "s3files"` (uses Mountpoint for S3 under the hood).
+
+**Quick example — S3 Files (the MESH client pattern):**
+
+```terraform
+  volumes = {
+    mesh = {
+      type = "s3files"
+      s3files = {
+        access_point_arn = aws_s3control_access_point.mesh.arn
+        file_system_arn  = aws_s3files_file_system.mesh.arn
+        kms_key_arn      = aws_kms_key.mesh.arn         # set when SSE-KMS
+      }
+    }
+  }
+
+  container_definitions = [
+    {
+      name  = "mesh-client"
+      image = "..."
+      mount_points = [
+        { sourceVolume = "mesh", containerPath = "/mnt/mesh" }
+      ]
+    }
+  ]
+```
+
+**Quick example — EFS (persistent shared storage):**
+
+```terraform
+  volumes = {
+    patient_data = {
+      type = "efs"
+      efs = {
+        file_system_id = aws_efs_file_system.patient.id
+        authorization_config = {
+          access_point_id = aws_efs_access_point.patient.id
+        }
+      }
+    }
+  }
+```
+
+**Hardened defaults you get for free:**
+
+- **EFS transit encryption** is hard-wired `ENABLED` — there is no opt-out, by design for the healthcare posture.
+- **EFS IAM authorization** defaults to `true` — more secure than the AWS provider's default.
+- **Task-role IAM policy** is computed and attached automatically (`elasticfilesystem:Client*` for EFS, `s3:Get/List/Put/Delete*` for S3 Files, KMS statements when `kms_key_arn` is set). Read/write derivation comes from `mount_points[*].readOnly`. Opt out per-volume with `attach_iam_policy = false` and attach `module.<name>.volume_iam_policy_json` yourself.
+
+**Prerequisites the module does NOT manage** (own them in your `infrastructure/` Terraform):
+
+- EFS file system + mount targets + their security group allowing TCP/2049 from `module.<name>.security_group_id`
+- S3 bucket + S3 Files file system + Mountpoint-for-S3 access point + KMS key
+
+Full schema, IAM grant matrix, and validation rules at [references/volumes.md](references/volumes.md). Decision guide and per-type configuration walkthrough at [../docs/volumes.md](../docs/volumes.md).
+
+### Step 6: Set Up Scaling (If Needed)
 
 First enable scaling, then add policies. See [references/scaling.md](references/scaling.md).
 
@@ -212,7 +280,7 @@ First enable scaling, then add policies. See [references/scaling.md](references/
 
 **Note:** `desired_count` is ignored after initial creation (lifecycle ignore). Scaling manages task count.
 
-### Step 6: Wire Up Outputs
+### Step 7: Wire Up Outputs
 
 Common output usage patterns. Full reference at [references/outputs.md](references/outputs.md).
 
@@ -251,7 +319,7 @@ resource "aws_appautoscaling_policy" "custom" {
 }
 ```
 
-### Step 7: Validate Configuration
+### Step 8: Validate Configuration
 
 ```bash
 terraform fmt -recursive
@@ -266,6 +334,10 @@ Common validation errors:
 - **"task_cpu must be greater than the sum of CPU..."** — containers + Envoy exceed `task_cpu`
 - **"Port name must be one of the container port names"** — `service_connect_configuration.port_name` doesn't match any `port_mappings[].name`
 - **"Load Balancer container name must be one of the container names"** — `load_balancers[].container_name` doesn't match any container
+- **"Each volume's `type` must be one of: ephemeral, efs, s3files"** — invalid `var.volumes[*].type` value
+- **"Each volume must have a configuration block matching its `type`..."** — type/sub-block mismatch in `var.volumes` (e.g. `type = "efs"` with an `s3files` block, or `type = "ephemeral"` with anything)
+- **"When an EFS volume has `authorization_config.access_point_id` set, `root_directory` must be omitted or set to \"/\"..."** — access points root the mount themselves; drop the `root_directory` field or set it to `/`
+- **"Every container `mount_points[*].sourceVolume` must reference a key declared in `var.volumes`..."** — typo in `sourceVolume`, or you forgot to add the volume entry
 
 ## Key Behaviors
 
@@ -275,11 +347,13 @@ Common validation errors:
 4. **Self-referencing security group** — all containers in the service can communicate
 5. **Auto-created IAM roles** — unless `task_role`/`execution_role` provided; policies attached either way
 6. **ECR pull-through cache auto-detected** — set `pull_cache_prefix` on containers to use
+7. **Volume IAM policy auto-attached** — declaring an EFS (with IAM auth on, the default) or S3 Files volume in `var.volumes` causes the module to compute a least-privilege policy and attach it to the task role. Opt out per-volume with `attach_iam_policy = false`; the JSON stays available as `volume_iam_policy_json` for manual attachment.
+8. **EFS transit encryption hard-wired** — `var.volumes[*].efs` always renders `transit_encryption = ENABLED`. No opt-out, by design for the healthcare posture.
 
 ## Requirements
 
 - Terraform >= 1.3
-- AWS Provider >= 6.0
+- AWS Provider >= 6.41 (required by `volume.s3files_volume_configuration`; older 6.x lacks the argument)
 - Existing ECS cluster and VPC with subnets
 
 ## Reference
@@ -287,4 +361,6 @@ Common validation errors:
 - **[references/inputs.md](references/inputs.md)** — All variables, types, defaults, and constraints
 - **[references/outputs.md](references/outputs.md)** — All outputs with types, value expressions, and usage
 - **[references/container-definitions.md](references/container-definitions.md)** — Full container definition schema
+- **[references/volumes.md](references/volumes.md)** — Task definition volumes (ephemeral / EFS / S3 Files), mount points, IAM auto-attach
 - **[references/scaling.md](references/scaling.md)** — Auto-scaling configuration details
+- **[../docs/volumes.md](../docs/volumes.md)** — Volume selection guide + per-type prose walkthrough

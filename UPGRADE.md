@@ -1,3 +1,26 @@
+# Upgrade to the volumes-enabled release
+
+This release adds a new optional `volumes` input and a new optional
+`mount_points` field on each `container_definitions` entry. Both
+default to a no-op (`{}` / unset), so the upgrade is transparent for
+consumers that don't declare volumes — no plan diff, no resource
+changes.
+
+When you do start using `volumes`:
+
+- The variable shape is documented in [`docs/volumes.md`](docs/volumes.md),
+  including which `type` (`ephemeral` / `efs` / `s3files`) to pick.
+- Declaring an EFS or S3 Files volume causes the module to attach a
+  least-privilege IAM policy to the task role by default. Set
+  `attach_iam_policy = false` per volume to opt out — the computed
+  JSON stays exposed as the `volume_iam_policy_json` output.
+- EFS IAM authorization defaults to `true` (more secure than the
+  AWS provider's default). Explicitly set
+  `efs.authorization_config.iam = false` for legacy network-only /
+  POSIX-only mounts.
+- EFS transit encryption is hard-wired `ENABLED` — there is no
+  opt-out, by design for the module's healthcare posture.
+
 # Upgrade from v1.2.1 to v1.2.2
 
 v1.2.2 introduces some changes that allow you to let the module create skeleton IAM roles for your ECS service.
