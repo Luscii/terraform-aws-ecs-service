@@ -540,7 +540,7 @@ variable "launch_type" {
   default     = null
 
   validation {
-    condition     = var.launch_type == null || contains(["EC2", "FARGATE", "EXTERNAL"], var.launch_type)
+    condition     = var.launch_type == null ? true : contains(["EC2", "FARGATE", "EXTERNAL"], var.launch_type)
     error_message = "Valid launch_type values are EC2, FARGATE and EXTERNAL."
   }
 }
