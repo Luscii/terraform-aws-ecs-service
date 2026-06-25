@@ -13,6 +13,9 @@ variables {
   vpc_id           = "vpc-12345678"
   subnets          = ["subnet-aaaaaaaa", "subnet-bbbbbbbb"]
   ecs_cluster_name = "test-cluster"
+  # The module requires exactly one of launch_type / capacity_provider_strategies
+  # to be set (check "launch_type_capacity_provider_strategies_conflict" in main.tf).
+  launch_type      = "FARGATE"
 
   container_definitions = [
     {
