@@ -26,7 +26,7 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event.release.tag_name }}
       - name: Create Linear release
-        uses: linear/linear-release-action@e01367f7b3c3a18868a4aab21ea6fdae80430050 # v0.14.2
+        uses: linear/linear-release-action@af56a9a388625921f3757a2f988e4d7aca958377 # v0.15.0
         with:
           access_key: ${{ secrets.LINEAR_ACCESS_KEY }}
           name: ${{ github.event.repository.name }} (${{ github.event.release.tag_name }})
