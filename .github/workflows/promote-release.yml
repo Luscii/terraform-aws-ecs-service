@@ -10,36 +10,8 @@ on:
         description: Type of release
         required: true
         type: string
-    secrets:
-      DX_BEARER_TOKEN:
-        required: true
-        description: 'DX bearer token for recording the deployment in getdx.net'
 
 jobs:
-  latest-release:
-    runs-on: ubuntu-latest
-    if: inputs.type == 'latest'
-    steps:
-      - name: Get Release
-        id: get-release
-        uses: boite-nl/query-release-action@v1.0.2
-        with:
-          select: ${{ inputs.ref }}
-      - name: Create release in DX
-        if: steps.get-release.outputs.found == 'true'
-        uses: Luscii/gha-dx-create-deployment@v1
-        with:
-          dx_instance: 'luscii'  # for luscii.getdx.net
-          bearer: ${{ secrets.DX_BEARER_TOKEN }}
-          service: 'tf-aws-ecs-service-module'
-          environment: 'production'
-          reference_id: ${{ github.run_id }}
-          source_url: ${{ steps.get-release.outputs.url }}
-          metadata: |
-            {
-              "version": "${{ steps.get-release.outputs.tag_name }}"
-            }
-
   create-tags:
     runs-on: ubuntu-latest
     steps:
